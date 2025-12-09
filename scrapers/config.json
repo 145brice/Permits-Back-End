@@ -1,0 +1,112 @@
+{
+  "nashville": {
+    "city": "Nashville",
+    "state": "TN",
+    "valid_states": ["TN"]
+  },
+  "chattanooga": {
+    "city": "Chattanooga",
+    "state": "TN",
+    "valid_states": ["TN"]
+  },
+  "austin": {
+    "city": "Austin",
+    "state": "TX",
+    "valid_states": ["TX"]
+  },
+  "sanantonio": {
+    "city": "San Antonio",
+    "state": "TX",
+    "valid_states": ["TX"]
+  },
+  "houston": {
+    "city": "Houston",
+    "state": "TX",
+    "valid_states": ["TX"]
+  },
+  "charlotte": {
+    "city": "Charlotte",
+    "state": "NC",
+    "valid_states": ["NC"]
+  },
+  "phoenix": {
+    "city": "Phoenix",
+    "state": "AZ",
+    "valid_states": ["AZ"]
+  },
+  "atlanta": {
+    "city": "Atlanta",
+    "state": "GA",
+    "valid_states": ["GA"]
+  },
+  "seattle": {
+    "city": "Seattle",
+    "state": "WA",
+    "valid_states": ["WA"]
+  },
+  "philadelphia": {
+    "city": "Philadelphia",
+    "state": "PA",
+    "valid_states": ["PA"]
+  },
+  "chicago": {
+    "city": "Chicago",
+    "state": "IL",
+    "valid_states": ["IL"]
+  },
+  "dallas": {
+    "city": "Dallas",
+    "state": "TX",
+    "valid_states": ["TX"]
+  },
+  "raleigh": {
+    "city": "Raleigh",
+    "state": "NC",
+    "valid_states": ["NC"]
+  },
+  "sandiego": {
+    "city": "San Diego",
+    "state": "CA",
+    "valid_states": ["CA"]
+  },
+  "indianapolis": {
+    "city": "Indianapolis",
+    "state": "IN",
+    "valid_states": ["IN"]
+  },
+  "columbus": {
+    "city": "Columbus",
+    "state": "OH",
+    "valid_states": ["OH"]
+  },
+  "boston": {
+    "city": "Boston",
+    "state": "MA",
+    "valid_states": ["MA"]
+  },
+  "richmond": {
+    "city": "Richmond",
+    "state": "VA",
+    "valid_states": ["VA"]
+  },
+  "milwaukee": {
+    "city": "Milwaukee",
+    "state": "WI",
+    "valid_states": ["WI"]
+  },
+  "maricopa": {
+    "city": "Phoenix",
+    "state": "AZ",
+    "valid_states": ["AZ"]
+  },
+  "mecklenburg": {
+    "city": "Charlotte",
+    "state": "NC",
+    "valid_states": ["NC"]
+  },
+  "snohomish": {
+    "city": "Everett",
+    "state": "WA",
+    "valid_states": ["WA"]
+  }
+}

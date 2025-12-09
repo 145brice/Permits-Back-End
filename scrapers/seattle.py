@@ -3,7 +3,7 @@ import requests
 import csv
 import time
 import os
-from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results
+from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results, validate_state
 
 class SeattlePermitScraper:
     def __init__(self):
@@ -64,9 +64,17 @@ class SeattlePermitScraper:
 
                             if permit_id and permit_id not in self.seen_permit_ids:
                                 self.seen_permit_ids.add(permit_id)
+
+                                # Extract address first
+                                address = record.get('originaladdress1') or 'N/A'
+
+                                # STATE VALIDATION: Only accept Washington addresses
+                                if not validate_state(address, 'seattle', self.logger):
+                                    continue  # Skip this record - wrong state
+
                                 self.permits.append({
                                     'permit_number': permit_id,
-                                    'address': record.get('originaladdress1') or 'N/A',
+                                    'address': address,
                                     'type': record.get('permittypedesc') or record.get('permittypemapped') or 'N/A',
                                     'value': self._parse_cost(record.get('estprojectcost') or 0),
                                     'issued_date': self._format_date(record.get('issueddate')),

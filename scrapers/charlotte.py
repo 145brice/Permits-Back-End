@@ -3,13 +3,13 @@ import requests
 import csv
 import time
 import os
-from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results
+from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results, validate_state
 
 class CharlottePermitScraper:
     def __init__(self):
-        # Charlotte migrated to ArcGIS Hub - use ArcGIS REST API
-        # New portal: https://data.charlottenc.gov/
-        self.arcgis_url = "https://services1.arcgis.com/x4bFVvkPY6h8hYPF/arcgis/rest/services/Building_Permits/FeatureServer/0/query"
+        # Charlotte/Mecklenburg County - use correct ArcGIS REST API
+        # Mecklenburg County Data Dashboard API
+        self.arcgis_url = "https://services.arcgis.com/lQySeXwbBg53XWDi/arcgis/rest/services/building_permits/FeatureServer/0/query"
         self.permits = []
         self.seen_permit_ids = set()
         self.logger = setup_logger('charlotte')
@@ -46,17 +46,17 @@ class CharlottePermitScraper:
 
         while total_fetched < max_permits:
             try:
-                # ArcGIS date format (Unix timestamp in milliseconds)
-                start_timestamp = int(start_date.timestamp() * 1000)
-                end_timestamp = int(end_date.timestamp() * 1000)
+                # Format dates for ArcGIS (YYYY-MM-DD format for string comparison)
+                start_date_str = start_date.strftime('%Y-%m-%d')
+                end_date_str = end_date.strftime('%Y-%m-%d')
 
                 params = {
-                    'where': f"issued_date >= {start_timestamp} AND issued_date <= {end_timestamp}",
-                    'outFields': 'permit_number,address,permit_type,cost,issued_date,status,objectid',
+                    'where': f"IssuedDate >= '{start_date_str}' AND IssuedDate <= '{end_date_str}'",
+                    'outFields': 'PermitNum,OriginalAddress1,OriginalCity,Type,IssuedDate,StatusCurrent,Description,OBJECTID',
                     'returnGeometry': 'false',
                     'resultRecordCount': min(batch_size, max_permits - total_fetched),
                     'resultOffset': offset,
-                    'orderByFields': 'issued_date DESC',
+                    'orderByFields': 'IssuedDateDtm DESC',
                     'f': 'json'
                 }
 
@@ -72,18 +72,29 @@ class CharlottePermitScraper:
                 consecutive_failures = 0
 
                 for feature in data['features']:
-                    props = feature.get('properties', {})
-                    permit_id = str(props.get('permit_number') or props.get('objectid', ''))
-                    
+                    attrs = feature.get('attributes', {})
+                    permit_id = str(attrs.get('PermitNum') or attrs.get('OBJECTID', ''))
+
                     if permit_id not in self.seen_permit_ids:
                         self.seen_permit_ids.add(permit_id)
+                        # Build full address
+                        address = attrs.get('OriginalAddress1', 'N/A')
+                        city = attrs.get('OriginalCity', 'Charlotte')
+                        if address != 'N/A' and city:
+                            address = f"{address}, {city}, NC"
+
+                        # STATE VALIDATION: Only accept North Carolina addresses
+                        if not validate_state(address, 'charlotte', self.logger):
+                            continue  # Skip this record - wrong state
+
                         self.permits.append({
                             'permit_number': permit_id,
-                            'address': props.get('address') or 'N/A',
-                            'type': props.get('permit_type') or 'N/A',
-                            'value': self._parse_cost(props.get('cost') or 0),
-                            'issued_date': self._format_arcgis_date(props.get('issued_date')),
-                            'status': props.get('status') or 'N/A'
+                            'address': address,
+                            'type': attrs.get('Type') or 'N/A',
+                            'value': '',  # Not provided in this API
+                            'issued_date': attrs.get('IssuedDate') or 'N/A',
+                            'status': attrs.get('StatusCurrent') or 'N/A',
+                            'description': attrs.get('Description') or ''
                         })
 
                 total_fetched += len(data['features'])
@@ -153,16 +164,11 @@ class CharlottePermitScraper:
         except:
             return 0
     
-    def _format_arcgis_date(self, timestamp_ms):
-        """Convert ArcGIS timestamp (milliseconds) to readable date"""
-        if not timestamp_ms:
+    def _format_arcgis_date(self, date_string):
+        """Date is already in YYYY-MM-DD format, just validate it"""
+        if not date_string or date_string == 'N/A':
             return 'N/A'
-        try:
-            # ArcGIS timestamps are in milliseconds, convert to seconds
-            dt = datetime.fromtimestamp(timestamp_ms / 1000)
-            return dt.strftime('%Y-%m-%d')
-        except:
-            return 'N/A'
+        return date_string
     
     def save_to_csv(self, filename=None):
         """Save permits to CSV file"""

@@ -3,7 +3,7 @@ import requests
 import csv
 import time
 import os
-from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck
+from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, validate_state
 
 class ChicagoPermitScraper:
     def __init__(self):
@@ -49,6 +49,10 @@ class ChicagoPermitScraper:
                                 record.get('street_name', '')
                             ]
                             address = ' '.join(filter(None, address_parts)) or 'N/A'
+
+                            # STATE VALIDATION: Only accept Illinois addresses
+                            if not validate_state(address, 'chicago', self.logger):
+                                continue  # Skip this record - wrong state
 
                             self.permits.append({
                                 'permit_number': pid,

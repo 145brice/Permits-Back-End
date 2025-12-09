@@ -207,3 +207,84 @@ def save_partial_results(permits, filename, scraper_name):
     except Exception as e:
         print(f"❌ Failed to save partial results: {e}")
         return False
+
+
+def load_scraper_config():
+    """Load scraper configuration with state validation rules"""
+    import json
+    config_path = os.path.join(os.path.dirname(__file__), 'config.json')
+
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"❌ Failed to load scraper config: {e}")
+        return {}
+
+
+def validate_state(address, scraper_name, logger=None):
+    """
+    Validate that scraped data matches expected state for this scraper.
+    This prevents data contamination (e.g., Philadelphia data in Phoenix folder).
+
+    Args:
+        address: Address string to validate
+        scraper_name: Name of scraper (e.g., 'phoenix', 'houston')
+        logger: Optional logger instance
+
+    Returns:
+        True if state matches or cannot be determined, False if wrong state detected
+    """
+    import re
+
+    if not address or address == 'N/A':
+        return True  # Can't validate empty addresses
+
+    # Load config
+    config = load_scraper_config()
+    if scraper_name not in config:
+        if logger:
+            logger.warning(f"No config found for {scraper_name} - skipping state validation")
+        return True
+
+    valid_states = config[scraper_name].get('valid_states', [])
+    if not valid_states:
+        return True
+
+    # Extract state abbreviation from address
+    # Look for common patterns: ", AZ", " AZ ", "Arizona"
+    state_pattern = r',\s*([A-Z]{2})(?:\s|,|$)'
+    match = re.search(state_pattern, address)
+
+    if not match:
+        # Try full state names
+        state_names = {
+            'arizona': 'AZ', 'texas': 'TX', 'pennsylvania': 'PA',
+            'illinois': 'IL', 'north carolina': 'NC', 'washington': 'WA',
+            'tennessee': 'TN', 'georgia': 'GA', 'california': 'CA'
+        }
+        address_lower = address.lower()
+        for name, abbrev in state_names.items():
+            if name in address_lower:
+                found_state = abbrev
+                break
+        else:
+            return True  # Can't determine state, allow it
+    else:
+        found_state = match.group(1)
+
+    # Check if found state matches valid states
+    if found_state not in valid_states:
+        if logger:
+            logger.warning(
+                f"❌ STATE MISMATCH: Found {found_state} in address '{address}' "
+                f"but {scraper_name} expects {valid_states}. DISCARDING."
+            )
+        else:
+            print(
+                f"❌ STATE MISMATCH in {scraper_name}: "
+                f"Found {found_state}, expected {valid_states}. DISCARDING: {address}"
+            )
+        return False
+
+    return True

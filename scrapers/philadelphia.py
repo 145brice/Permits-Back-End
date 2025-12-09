@@ -3,7 +3,7 @@ import requests
 import csv
 import time
 import os
-from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck
+from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, validate_state
 
 class PhiladelphiaPermitScraper:
     def __init__(self):
@@ -58,9 +58,17 @@ class PhiladelphiaPermitScraper:
                         pid = record.get('permitnumber')
                         if pid and pid not in self.seen_permit_ids:
                             self.seen_permit_ids.add(pid)
+
+                            # Extract address first
+                            address = record.get('address') or 'N/A'
+
+                            # STATE VALIDATION: Only accept Pennsylvania addresses
+                            if not validate_state(address, 'philadelphia', self.logger):
+                                continue  # Skip this record - wrong state
+
                             self.permits.append({
                                 'permit_number': pid,
-                                'address': record.get('address') or 'N/A',
+                                'address': address,
                                 'type': record.get('permitdescription') or record.get('typeofwork') or 'N/A',
                                 'value': '$0.00',  # No cost field in this dataset
                                 'issued_date': record.get('permitissuedate','').split('T')[0] if record.get('permitissuedate') else 'N/A',

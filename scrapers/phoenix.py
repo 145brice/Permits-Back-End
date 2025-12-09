@@ -3,7 +3,7 @@ import requests
 import csv
 import time
 import os
-from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results
+from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results, validate_state
 
 class PhoenixPermitScraper:
     def __init__(self):
@@ -82,9 +82,17 @@ class PhoenixPermitScraper:
 
                     if permit_id not in self.seen_permit_ids:
                         self.seen_permit_ids.add(permit_id)
+
+                        # Extract address first
+                        address = attrs.get('address') or 'N/A'
+
+                        # STATE VALIDATION: Only accept Arizona addresses
+                        if not validate_state(address, 'phoenix', self.logger):
+                            continue  # Skip this record - wrong state
+
                         self.permits.append({
                             'permit_number': permit_id,
-                            'address': attrs.get('address') or 'N/A',
+                            'address': address,
                             'type': attrs.get('work_type') or 'N/A',
                             'value': self._parse_cost(attrs.get('cost') or 0),
                             'issued_date': self._format_date(attrs.get('issued_date')),
