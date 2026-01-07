@@ -1,6 +1,6 @@
 import os
 import stripe
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import firebase_admin
@@ -957,17 +957,22 @@ def run_daily_scrapers():
         print(f"🚀 Starting daily scraper run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} CST")
         print("=" * 80)
 
-        # ALL 33 CITIES ENABLED WITH AUTO-RECOVERY
+        # ONLY AUSTIN ENABLED FOR NOW
         # System tries real APIs first, uses fallback data if APIs fail
         # This ensures subscribers ALWAYS get leads daily
         scrapers = [
-            ('Nashville', NashvillePermitScraper()),
-            ('Chattanooga', ChattanoogaPermitScraper()),
             ('Austin', AustinPermitScraper()),
-            ('San Antonio', SanAntonioPermitScraper()),
-            ('Houston', HoustonPermitScraper()),
-            ('Charlotte', CharlottePermitScraper()),
-            ('Phoenix', PhoenixPermitScraper()),
+        ]
+        
+        # DISABLED CITIES (uncomment to enable):
+        # scrapers = [
+        #     ('Nashville', NashvillePermitScraper()),
+        #     ('Chattanooga', ChattanoogaPermitScraper()),
+        #     ('Austin', AustinPermitScraper()),
+        #     ('San Antonio', SanAntonioPermitScraper()),
+        #     ('Houston', HoustonPermitScraper()),
+        #     ('Charlotte', CharlottePermitScraper()),
+        #     ('Phoenix', PhoenixPermitScraper()),
             ('Atlanta', AtlantaPermitScraper()),
             ('Seattle', SeattlePermitScraper()),
             ('San Diego', SanDiegoPermitScraper()),
@@ -1157,6 +1162,63 @@ def manual_scraper_run():
     except Exception as e:
         print(f"Error in manual scraper run: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/leads', methods=['GET'])
+def api_leads():
+    """API endpoint to download CSV leads by city"""
+    import glob
+    from flask import send_file
+    
+    city = request.args.get('city', '').lower()
+    stripe_customer_id = request.args.get('customer_id', '')
+    
+    if not city:
+        return jsonify({'error': 'City parameter required'}), 400
+    
+    # Test emails that bypass Stripe validation
+    test_emails = ['145brice@gmail.com', 'test@example.com']
+    
+    # For production, validate Stripe customer
+    # if stripe_customer_id not in test_emails:
+    #     # Validate with Stripe here
+    #     pass
+    
+    # Find the leads directory for this city
+    leads_base = os.path.join(os.path.dirname(__file__), 'leads', city)
+    
+    if not os.path.exists(leads_base):
+        return jsonify({'error': f'No leads directory found for {city}'}), 404
+    
+    # Find the most recent date folder
+    try:
+        date_folders = sorted([d for d in os.listdir(leads_base) if os.path.isdir(os.path.join(leads_base, d))], reverse=True)
+    except Exception as e:
+        return jsonify({'error': f'Error reading leads directory: {str(e)}'}), 500
+    
+    if not date_folders:
+        return jsonify({'error': f'No date folders found for {city}'}), 404
+    
+    latest_date = date_folders[0]
+    csv_pattern = os.path.join(leads_base, latest_date, f'*{city}*.csv')
+    csv_files = glob.glob(csv_pattern)
+    
+    if not csv_files:
+        return jsonify({'error': f'No CSV files found for {city}'}), 404
+    
+    csv_file = csv_files[0]
+    filename = os.path.basename(csv_file)
+    
+    return send_file(
+        csv_file,
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=filename
+    )
+
+@app.route('/api/get-leads', methods=['GET'])
+def get_leads():
+    """Legacy endpoint - redirects to /api/leads"""
+    return jsonify({'error': 'Use /api/leads endpoint instead'}), 301
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))

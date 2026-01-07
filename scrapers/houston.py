@@ -7,17 +7,8 @@ from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_pa
 
 class HoustonPermitScraper:
     def __init__(self):
-        # Try multiple Houston endpoints (they have 2 portals!)
-        self.endpoints = [
-            {
-                'url': 'https://cohgis-mycity.opendata.arcgis.com/api/v3/datasets/building-permits/downloads/data?format=geojson',
-                'type': 'arcgis_download'
-            },
-            {
-                'url': 'https://services.arcgis.com/Su7kLxfITnW1QVua/arcgis/rest/services/Building_Permits/FeatureServer/0/query',
-                'type': 'arcgis_api'
-            }
-        ]
+        # Houston uses Socrata API
+        self.base_url = "https://data.houstontexas.gov/resource/msrk-w9d7.json"
         self.permits = []
         self.seen_permit_ids = set()
         self.logger = setup_logger('houston')
@@ -31,50 +22,28 @@ class HoustonPermitScraper:
         return response.json()
 
     @retry_with_backoff(max_retries=3, initial_delay=2, exceptions=(requests.RequestException,))
-    def _fetch_geojson(self, url):
-        """Fetch GeoJSON download with retry logic"""
+    def _fetch_csv(self, url):
+        """Fetch CSV download with retry logic"""
         response = requests.get(url, timeout=60)
         response.raise_for_status()
-        return response.json()
+        return response.text
 
     def scrape_permits(self, max_permits=5000, days_back=90):
-        """Scrape Houston permits with auto-recovery across multiple endpoints"""
+        """Scrape Houston permits with auto-recovery"""
         self.logger.info("🏗️  Houston TX Construction Permits Scraper")
         print(f"🏗️  Houston TX Construction Permits Scraper")
         print(f"=" * 60)
         print(f"📅 Date Range: {(datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')} to {datetime.now().strftime('%Y-%m-%d')}")
-        print(f"📡 Trying multiple Houston data sources...")
+        print(f"📡 Fetching up to {max_permits} permits from last {days_back} days...")
 
-        # Try each endpoint
-        for i, endpoint in enumerate(self.endpoints, 1):
-            self.logger.info(f"Attempt {i}/{len(self.endpoints)}: {endpoint['type']}")
-            print(f"\n🔍 Attempt {i}/{len(self.endpoints)}: {endpoint['type']}")
+        # Calculate date range
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
+        start_str = start_date.strftime('%Y-%m-%d')
+        end_str = end_date.strftime('%Y-%m-%d')
 
-            try:
-                if endpoint['type'] == 'arcgis_api':
-                    success = self._try_arcgis_api(endpoint['url'], max_permits, days_back)
-                elif endpoint['type'] == 'arcgis_download':
-                    success = self._try_arcgis_download(endpoint['url'], max_permits, days_back)
+        self.logger.info(f"Date Range: {start_str} to {end_str}")
 
-                if success and len(self.permits) > 0:
-                    self.logger.info(f"✅ Success! Got {len(self.permits)} permits")
-                    self.health_check.record_success(len(self.permits))
-                    print(f"✅ Successfully retrieved {len(self.permits)} permits!")
-                    return self.permits
-
-            except Exception as e:
-                self.logger.warning(f"Endpoint failed: {e}")
-                print(f"   ❌ Failed: {e}")
-                continue
-
-        # All endpoints failed
-        self.logger.error("All Houston endpoints failed")
-        self.health_check.record_failure("All endpoints failed")
-        print(f"\n⚠️  All Houston endpoints failed - will retry next run")
-        return []
-    
-    def _try_arcgis_api(self, url, max_permits, days_back):
-        """Try ArcGIS REST API with auto-recovery"""
         offset = 0
         batch_size = 1000
         consecutive_failures = 0
@@ -83,7 +52,87 @@ class HoustonPermitScraper:
         while len(self.permits) < max_permits:
             try:
                 params = {
-                    'where': '1=1',
+                    '$where': f"issue_date >= '{start_str}' AND issue_date <= '{end_str}'",
+                    '$order': 'issue_date DESC',
+                    '$limit': min(batch_size, max_permits - len(self.permits)),
+                    '$offset': offset
+                }
+
+                data = self._fetch_batch(params)
+
+                if not data:
+                    self.logger.info(f"No more data at offset {offset}")
+                    break
+
+                # Reset failure counter on success
+                consecutive_failures = 0
+
+                for record in data:
+                    permit_id = record.get('permit_num') or record.get('permit_number') or str(record.get('id', ''))
+                    if permit_id not in self.seen_permit_ids:
+                        self.seen_permit_ids.add(permit_id)
+                        self.permits.append({
+                            'permit_number': permit_id,
+                            'address': f"{record.get('original_address1', '')}, {record.get('city', '')}, {record.get('state', '')}".strip(', '),
+                            'type': record.get('permit_type_desc'),
+                            'value': record.get('total_job_valuation', 0),
+                            'issued_date': self._format_date(record.get('issue_date')),
+                            'status': record.get('status')
+                        })
+
+                self.logger.debug(f"Fetched batch at offset {offset}: {len(data)} records")
+
+                if len(data) < batch_size:
+                    break
+                offset += batch_size
+                time.sleep(0.5)
+
+            except requests.RequestException as e:
+                consecutive_failures += 1
+                self.logger.warning(f"Request error at offset {offset}: {e}")
+
+                if consecutive_failures >= max_consecutive_failures:
+                    self.logger.error(f"Too many consecutive failures ({consecutive_failures}), stopping")
+                    if self.permits:
+                        today = datetime.now().strftime('%Y-%m-%d')
+                        filename = f'../leads/houston/{today}/{today}_houston_partial.csv'
+                        save_partial_results(self.permits, filename, 'houston')
+                    break
+
+                offset += batch_size
+                time.sleep(2)
+
+            except Exception as e:
+                consecutive_failures += 1
+                self.logger.error(f"Unexpected error at offset {offset}: {e}", exc_info=True)
+
+        if self.permits:
+            self.logger.info(f"✅ Success! Got {len(self.permits)} permits")
+            self.health_check.record_success(len(self.permits))
+            print(f"✅ Successfully retrieved {len(self.permits)} permits!")
+            return self.permits
+        else:
+            self.logger.error("All Houston endpoints failed")
+            self.health_check.record_failure("All endpoints failed")
+            print(f"\n⚠️  All Houston endpoints failed - will retry next run")
+            return []
+    
+    def _try_arcgis_api(self, url, max_permits, days_back):
+        """Try ArcGIS REST API with auto-recovery"""
+        # Calculate date range
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days_back)
+        start_str = start_date.strftime('%Y-%m-%d')
+        
+        offset = 0
+        batch_size = 1000
+        consecutive_failures = 0
+        max_consecutive_failures = 3
+
+        while len(self.permits) < max_permits:
+            try:
+                params = {
+                    'where': f"ISSUE_DATE >= date '{start_str}'",
                     'outFields': '*',
                     'returnGeometry': 'false',
                     'resultOffset': offset,
@@ -163,39 +212,40 @@ class HoustonPermitScraper:
         return len(self.permits) > 0
     
     def _try_arcgis_download(self, url, max_permits, days_back):
-        """Try downloading GeoJSON from ArcGIS Hub with auto-recovery"""
+        """Try downloading CSV from ArcGIS Hub with auto-recovery"""
         try:
-            data = self._fetch_geojson(url)
-
-            if 'features' in data:
-                self.logger.info(f"Downloaded GeoJSON with {len(data['features'])} features")
-                for feature in data['features'][:max_permits]:
-                    props = feature.get('properties', {})
-                    permit_id = str(props.get('permit_number') or props.get('PERMIT_NUMBER') or props.get('OBJECTID', ''))
-
-                    if permit_id not in self.seen_permit_ids:
-                        self.seen_permit_ids.add(permit_id)
-
-                        # Extract address first
-                        address = props.get('address') or 'N/A'
-
-                        # STATE VALIDATION: Only accept Texas addresses
-                        if not validate_state(address, 'houston', self.logger):
-                            continue  # Skip this record - wrong state
-
-                        self.permits.append({
-                            'permit_number': permit_id,
-                            'address': address,
-                            'type': props.get('work_type') or 'N/A',
-                            'value': self._parse_cost(props.get('cost') or 0),
-                            'issued_date': self._format_date(props.get('issue_date')),
-                            'status': props.get('status') or 'N/A'
-                        })
-
+            csv_text = self._fetch_csv(url)
+            import io
+            reader = csv.DictReader(io.StringIO(csv_text))
+            
+            for row in reader:
+                if len(self.permits) >= max_permits:
+                    break
+                permit_id = str(row.get('permit_number') or row.get('PERMIT_NUMBER') or row.get('OBJECTID', ''))
+                
+                if permit_id not in self.seen_permit_ids:
+                    self.seen_permit_ids.add(permit_id)
+                    
+                    # Extract address first
+                    address = row.get('address') or 'N/A'
+                    
+                    # STATE VALIDATION: Only accept Texas addresses
+                    if not validate_state(address, 'houston', self.logger):
+                        continue  # Skip this record - wrong state
+                    
+                    self.permits.append({
+                        'permit_number': permit_id,
+                        'address': address,
+                        'type': row.get('work_type') or 'N/A',
+                        'value': self._parse_cost(row.get('cost') or 0),
+                        'issued_date': self._format_date(row.get('issue_date')),
+                        'status': row.get('status') or 'N/A'
+                    })
+            
             return len(self.permits) > 0
 
         except Exception as e:
-            self.logger.error(f"GeoJSON download failed: {e}", exc_info=True)
+            self.logger.error(f"CSV download failed: {e}", exc_info=True)
             return False
     
     def _parse_cost(self, value):

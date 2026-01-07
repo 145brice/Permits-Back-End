@@ -8,7 +8,7 @@ from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_pa
 class PhoenixPermitScraper:
     def __init__(self):
         # Phoenix uses ArcGIS REST API
-        self.base_url = "https://services1.arcgis.com/mpVYz37anSdrK4d8/arcgis/rest/services/Building_Permits/FeatureServer/0/query"
+        self.base_url = "https://gis.phoenix.gov/PhoenixGIS/rest/services/Public/permits/MapServer/0/query"
         self.permits = []
         self.seen_permit_ids = set()
         self.logger = setup_logger('phoenix')
@@ -59,7 +59,7 @@ class PhoenixPermitScraper:
         while total_fetched < max_permits:
             try:
                 params = {
-                    'where': f"issued_date >= {start_timestamp} AND issued_date <= {end_timestamp}",
+                    'where': '1=1',
                     'outFields': '*',
                     'returnGeometry': 'false',
                     'resultOffset': offset,

@@ -201,3 +201,21 @@
 2025-12-03 21:49:30 - nashville - WARNING - Batch error at offset 3000: HTTPSConnectionPool(host='maps.nashville.gov', port=443): Read timed out. (read timeout=30)
 2025-12-03 21:49:30 - nashville - ERROR - Too many consecutive failures on Nashville MapServer
 2025-12-03 21:49:30 - nashville - INFO - ✅ Success! Got 1000 permits from Nashville MapServer
+2026-01-01 16:26:29 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 16:41:05 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 16:44:04 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 16:49:14 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 16:54:38 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 17:07:28 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 17:09:20 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 17:32:19 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 18:01:25 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 18:07:07 - nashville - INFO - Trying Nashville MapServer
+2026-01-01 18:41:54 - nashville - INFO - Trying Nashville MapServer
+2026-01-05 02:14:12 - nashville - INFO - Trying Nashville Data Hub (Primary)
+2026-01-05 02:14:13 - nashville - WARNING - Nashville Data Hub (Primary) returned error: {'code': 400, 'message': 'Invalid URL', 'details': ['Invalid URL']}
+2026-01-05 02:14:13 - nashville - INFO - Trying Nashville MapServer
+2026-01-05 02:15:15 - nashville - WARNING - Batch error at offset 1000: HTTPSConnectionPool(host='maps.nashville.gov', port=443): Read timed out. (read timeout=30)
+2026-01-05 02:15:48 - nashville - WARNING - Batch error at offset 2000: HTTPSConnectionPool(host='maps.nashville.gov', port=443): Read timed out. (read timeout=30)
+2026-01-05 02:16:21 - nashville - WARNING - Batch error at offset 3000: HTTPSConnectionPool(host='maps.nashville.gov', port=443): Read timed out. (read timeout=30)
+2026-01-05 02:16:21 - nashville - ERROR - Too many consecutive failures on Nashville MapServer

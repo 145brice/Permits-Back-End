@@ -19,6 +19,8 @@ class ChattanoogaPermitScraper:
         """Fetch a single batch with retry logic"""
         response = requests.get(self.base_url, params=params, timeout=30)
         response.raise_for_status()
+        if not response.text.strip():
+            return []  # Empty response
         return response.json()
 
     def scrape_permits(self, max_permits=5000, days_back=90):

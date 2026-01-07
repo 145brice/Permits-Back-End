@@ -63,6 +63,14 @@ def main():
     from scrapers.charlotte import CharlottePermitScraper
     from scrapers.chattanooga import ChattanoogaPermitScraper
     from scrapers.phoenix import PhoenixPermitScraper
+    from scrapers.atlanta import AtlantaPermitScraper
+    from scrapers.philadelphia import PhiladelphiaPermitScraper
+    from scrapers.dallas import DallasPermitScraper
+    from scrapers.indianapolis import IndianapolisPermitScraper
+    from scrapers.raleigh import RaleighPermitScraper
+    from scrapers.sandiego import SanDiegoPermitScraper
+    from scrapers.seattle import SeattlePermitScraper
+    from scrapers.cleveland import ClevelandPermitScraper
 
     scrapers = [
         ('Nashville', NashvillePermitScraper),
@@ -72,6 +80,14 @@ def main():
         ('Charlotte', CharlottePermitScraper),
         ('Chattanooga', ChattanoogaPermitScraper),
         ('Phoenix', PhoenixPermitScraper),
+        ('Atlanta', AtlantaPermitScraper),
+        ('Philadelphia', PhiladelphiaPermitScraper),
+        ('Dallas', DallasPermitScraper),
+        ('Indianapolis', IndianapolisPermitScraper),
+        ('Raleigh', RaleighPermitScraper),
+        ('San Diego', SanDiegoPermitScraper),
+        ('Seattle', SeattlePermitScraper),
+        ('Cleveland', ClevelandPermitScraper),
     ]
 
     results = {}

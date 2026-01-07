@@ -11,6 +11,11 @@ class NashvillePermitScraper:
         # Multiple endpoints for auto-recovery
         self.endpoints = [
             {
+                'name': 'Nashville Data Hub (Primary)',
+                'url': 'https://services2.arcgis.com/dUS8W8FLMfTccxJz/arcgis/rest/services/Building_Permits/FeatureServer/0/query',
+                'type': 'arcgis_featureserver'
+            },
+            {
                 'name': 'Nashville MapServer',
                 'url': 'https://maps.nashville.gov/arcgis/rest/services/Codes/BuildingPermits/MapServer/0/query',
                 'type': 'arcgis_mapserver'
