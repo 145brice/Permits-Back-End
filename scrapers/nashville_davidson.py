@@ -2,6 +2,7 @@ import csv
 import requests
 from datetime import datetime
 from io import StringIO
+import os
 from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results
 
 class NashvilleDavidsonPermitScraper:
@@ -45,9 +46,6 @@ class NashvilleDavidsonPermitScraper:
                             date_str = 'N/A'
 
                         permit = {
-                            'metro': 'Nashville',
-                            'county': 'Davidson',
-                            'state': 'TN',
                             'permit_number': attrs.get('CASE_NUMBER', 'N/A'),
                             'address': attrs.get('LOCATION', 'N/A'),
                             'permit_type': attrs.get('CASE_TYPE_DESC', 'Building Permit'),
@@ -72,5 +70,40 @@ class NashvilleDavidsonPermitScraper:
             print(f"   ❌ Nashville error: {e}")
 
         # Save partial results
-        save_partial_results(permits, 'nashville_davidson')
+        save_partial_results(permits, f'../leads/nashville/{datetime.now().strftime("%Y-%m-%d")}/{datetime.now().strftime("%Y-%m-%d")}_nashville_partial.csv', 'nashville_davidson')
         return permits
+
+    def save_to_csv(self, filename=None):
+        """Save permits to CSV file"""
+        if not self.permits:
+            return
+        if filename is None:
+            today = datetime.now().strftime('%Y-%m-%d')
+            filename = f'../leads/nashville/{today}/{today}_nashville.csv'
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+
+        import csv
+        with open(filename, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=list(self.permits[0].keys()))
+            writer.writeheader()
+            writer.writerows(self.permits)
+        print(f"✅ Saved {len(self.permits)} permits to {filename}")
+
+    def run(self):
+        """Main execution with error handling and auto-recovery"""
+        try:
+            self.permits = self.scrape_permits()
+            if self.permits:
+                self.save_to_csv()
+                self.logger.info(f"✅ Scraped {len(self.permits)} permits for nashville_davidson")
+                print(f"✅ Scraped {len(self.permits)} permits for nashville_davidson")
+                return self.permits
+            else:
+                self.logger.warning("❌ No permits scraped for nashville_davidson")
+                print(f"❌ No permits scraped for nashville_davidson - will retry next run")
+                return []
+        except Exception as e:
+            self.logger.error(f"Fatal error in scraper: {e}", exc_info=True)
+            self.health_check.record_failure(str(e))
+            print(f"❌ Fatal error in nashville_davidson scraper: {e}")
+            return []

@@ -967,6 +967,7 @@ def run_daily_scrapers():
         # This ensures subscribers ALWAYS get leads daily
         scrapers = [
             ('Austin', AustinPermitScraper()),
+            ('Nashville', NashvilleDavidsonPermitScraper()),
         ]
         
         # DISABLED CITIES (uncomment to enable):
