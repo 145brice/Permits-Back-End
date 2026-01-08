@@ -998,8 +998,8 @@ def run_daily_scrapers():
         #     ('Colorado Springs', ColoradoSpringsPermitScraper()),
         #     ('Raleigh', RaleighPermitScraper()),
         #     ('Oklahoma City', OklahomaCityPermitScraper()),
-            ('Albuquerque', AlbuquerquePermitScraper())
-        ]
+        #     ('Albuquerque', AlbuquerquePermitScraper())
+        # ]
 
         results = []
         successful = 0
