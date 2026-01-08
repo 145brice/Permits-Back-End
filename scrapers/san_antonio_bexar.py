@@ -2,6 +2,7 @@ import csv
 import requests
 from datetime import datetime
 from io import StringIO
+import os
 from .utils import retry_with_backoff, setup_logger, ScraperHealthCheck, save_partial_results
 
 class SanAntonioBexarPermitScraper:
@@ -68,5 +69,40 @@ class SanAntonioBexarPermitScraper:
             print(f"   ❌ San Antonio error: {e}")
 
         # Save partial results
-        save_partial_results(permits, 'san_antonio_bexar')
+        save_partial_results(permits, f'../leads/sanantonio/{datetime.now().strftime("%Y-%m-%d")}/{datetime.now().strftime("%Y-%m-%d")}_sanantonio_partial.csv', 'san_antonio_bexar')
         return permits
+
+    def save_to_csv(self, filename=None):
+        """Save permits to CSV file"""
+        if not self.permits:
+            return
+        if filename is None:
+            today = datetime.now().strftime('%Y-%m-%d')
+            filename = f'../leads/sanantonio/{today}/{today}_sanantonio.csv'
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+
+        import csv
+        with open(filename, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.DictWriter(f, fieldnames=list(self.permits[0].keys()))
+            writer.writeheader()
+            writer.writerows(self.permits)
+        print(f"✅ Saved {len(self.permits)} permits to {filename}")
+
+    def run(self):
+        """Main execution with error handling and auto-recovery"""
+        try:
+            self.permits = self.scrape_permits()
+            if self.permits:
+                self.save_to_csv()
+                self.logger.info(f"✅ Scraped {len(self.permits)} permits for san_antonio_bexar")
+                print(f"✅ Scraped {len(self.permits)} permits for san_antonio_bexar")
+                return self.permits
+            else:
+                self.logger.warning("❌ No permits scraped for san_antonio_bexar")
+                print(f"❌ No permits scraped for san_antonio_bexar - will retry next run")
+                return []
+        except Exception as e:
+            self.logger.error(f"Fatal error in scraper: {e}", exc_info=True)
+            self.health_check.record_failure(str(e))
+            print(f"❌ Fatal error in san_antonio_bexar scraper: {e}")
+            return []

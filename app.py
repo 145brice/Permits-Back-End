@@ -968,6 +968,7 @@ def run_daily_scrapers():
         scrapers = [
             ('Austin', AustinPermitScraper()),
             ('Nashville', NashvilleDavidsonPermitScraper()),
+            ('San Antonio', SanAntonioBexarPermitScraper()),
         ]
         
         # DISABLED CITIES (uncomment to enable):

@@ -20,13 +20,13 @@
 
 ## Recently Created Scrapers (Not Yet Enabled)
 
-### 🟡 San Antonio, TX - Bexar County
+### ✅ San Antonio, TX - Bexar County
 - **Scraper Class**: `SanAntonioBexarPermitScraper`
 - **File**: `scrapers/san_antonio_bexar.py`
-- **Data Source**: OpenGov CSV Download (`https://data.sanantonio.gov/dataset/.../download/accelasubmitpermitsextract.csv`)
-- **Status**: 🟡 CREATED - Code complete, not tested in production
-- **Frontend Status**: ❌ Not enabled (San Antonio exists but uses different scraper)
-- **Notes**: Parses CSV data, limits to 200 permits per run
+- **Data Source**: OpenGov CSV Download (`https://data.sanantonio.gov/.../download/accelasubmitpermitsextract.csv`)
+- **Status**: ✅ ACTIVE - Fetches real permit data from official city portal
+- **Frontend Status**: ✅ Available for download
+- **Last Verified**: January 8, 2026
 
 ### 🟡 Austin, TX - Travis County (Alternative)
 - **Scraper Class**: `AustinTravisPermitScraper`
@@ -94,6 +94,6 @@ python -c "from scrapers import AustinPermitScraper; scraper = AustinPermitScrap
 ---
 
 *Last Updated: January 8, 2026*
-*Active Cities: 2 (Austin, Nashville)*
-*Working Scrapers: 2*</content>
+*Active Cities: 3 (Austin, Nashville, San Antonio)*
+*Working Scrapers: 3*</content>
 <parameter name="filePath">c:\Users\user\OneDrive\Desktop\Permits Back End\Permits-Back-End\WORKING_SCRAPERS.md
