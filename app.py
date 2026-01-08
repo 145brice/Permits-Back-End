@@ -55,7 +55,12 @@ from scrapers import (
     ColoradoSpringsPermitScraper,
     RaleighPermitScraper,
     OklahomaCityPermitScraper,
-    AlbuquerquePermitScraper
+    AlbuquerquePermitScraper,
+    # New county-specific scrapers
+    NashvilleDavidsonPermitScraper,
+    ChattanoogaHamiltonPermitScraper,
+    AustinTravisPermitScraper,
+    SanAntonioBexarPermitScraper
 )
 
 # Load environment variables from .env file
@@ -998,7 +1003,12 @@ def run_daily_scrapers():
         #     ('Colorado Springs', ColoradoSpringsPermitScraper()),
         #     ('Raleigh', RaleighPermitScraper()),
         #     ('Oklahoma City', OklahomaCityPermitScraper()),
-        #     ('Albuquerque', AlbuquerquePermitScraper())
+        #     ('Albuquerque', AlbuquerquePermitScraper()),
+        #     # New county-specific scrapers
+        #     ('Nashville-Davidson', NashvilleDavidsonPermitScraper()),
+        #     ('Chattanooga-Hamilton', ChattanoogaHamiltonPermitScraper()),
+        #     ('Austin-Travis', AustinTravisPermitScraper()),
+        #     ('San Antonio-Bexar', SanAntonioBexarPermitScraper())
         # ]
 
         results = []

@@ -52,6 +52,12 @@ from .raleigh import RaleighPermitScraper
 from .oklahomacity import OklahomaCityPermitScraper
 from .albuquerque import AlbuquerquePermitScraper
 
+# New county-specific scrapers
+from .nashville_davidson import NashvilleDavidsonPermitScraper
+from .chattanooga_hamilton import ChattanoogaHamiltonPermitScraper
+from .austin_travis import AustinTravisPermitScraper
+from .san_antonio_bexar import SanAntonioBexarPermitScraper
+
 __all__ = [
     'NashvillePermitScraper',
     'AustinPermitScraper',
@@ -86,4 +92,8 @@ __all__ = [
     'RaleighPermitScraper',
     'OklahomaCityPermitScraper',
     'AlbuquerquePermitScraper',
+    'NashvilleDavidsonPermitScraper',
+    'ChattanoogaHamiltonPermitScraper',
+    'AustinTravisPermitScraper',
+    'SanAntonioBexarPermitScraper',
 ]
