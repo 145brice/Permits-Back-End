@@ -1162,21 +1162,34 @@ def manual_scraper_run():
 def get_leads():
     """Check Stripe subscription and return CSV if active"""
     try:
-        test_email = 'your-email@example.com'  # Replace with your email
+        customer_id = request.args.get('customer_id')
+        if not customer_id:
+            return jsonify({'error': 'Customer ID required'}), 400
 
-        # Find customer by email
-        customers = stripe.Customer.list(email=test_email)
-        if not customers.data:
-            return jsonify({'error': 'No customer found'}), 403
+        # Test emails that bypass Stripe check
+        test_emails = [
+            'test@example.com',
+            'admin@permits.com',
+            '145brice@gmail.com',
+        ]
 
-        customer = customers.data[0]
+        if customer_id.lower() in [email.lower() for email in test_emails]:
+            # Bypass Stripe for test emails
+            pass
+        else:
+            # Find customer by email
+            customers = stripe.Customer.list(email=customer_id)
+            if not customers.data:
+                return jsonify({'error': 'No customer found'}), 403
 
-        # Check subscriptions
-        subscriptions = stripe.Subscription.list(customer=customer.id)
-        active_sub = next((sub for sub in subscriptions.data if sub.status == 'active'), None)
+            customer = customers.data[0]
 
-        if not active_sub:
-            return jsonify({'error': 'No active subscription'}), 403
+            # Check subscriptions
+            subscriptions = stripe.Subscription.list(customer=customer.id)
+            active_sub = next((sub for sub in subscriptions.data if sub.status == 'active'), None)
+
+            if not active_sub:
+                return jsonify({'error': 'No active subscription'}), 403
 
         # Return CSV
         csv_data = 'name,address,city\nJohn Doe,123 Main St,Austin\nJane Smith,456 Oak Ave,Chicago\n'
