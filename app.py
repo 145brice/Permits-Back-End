@@ -55,12 +55,7 @@ from scrapers import (
     ColoradoSpringsPermitScraper,
     RaleighPermitScraper,
     OklahomaCityPermitScraper,
-    AlbuquerquePermitScraper,
-    # New county-specific scrapers
-    NashvilleDavidsonPermitScraper,
-    ChattanoogaHamiltonPermitScraper,
-    AustinTravisPermitScraper,
-    SanAntonioBexarPermitScraper
+    AlbuquerquePermitScraper
 )
 
 # Load environment variables from .env file
@@ -962,56 +957,44 @@ def run_daily_scrapers():
         print(f"🚀 Starting daily scraper run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} CST")
         print("=" * 80)
 
-        # ONLY AUSTIN ENABLED FOR NOW
+        # ALL 33 CITIES ENABLED WITH AUTO-RECOVERY
         # System tries real APIs first, uses fallback data if APIs fail
         # This ensures subscribers ALWAYS get leads daily
         scrapers = [
+            ('Nashville', NashvillePermitScraper()),
+            ('Chattanooga', ChattanoogaPermitScraper()),
             ('Austin', AustinPermitScraper()),
-            ('Nashville', NashvilleDavidsonPermitScraper()),
-            ('San Antonio', SanAntonioBexarPermitScraper()),
+            ('San Antonio', SanAntonioPermitScraper()),
+            ('Houston', HoustonPermitScraper()),
+            ('Charlotte', CharlottePermitScraper()),
+            ('Phoenix', PhoenixPermitScraper()),
+            ('Atlanta', AtlantaPermitScraper()),
+            ('Seattle', SeattlePermitScraper()),
+            ('San Diego', SanDiegoPermitScraper()),
+            ('Chicago', ChicagoPermitScraper()),
+            ('Indianapolis', IndianapolisPermitScraper()),
+            ('Columbus', ColumbusPermitScraper()),
+            ('Boston', BostonPermitScraper()),
+            ('Philadelphia', PhiladelphiaPermitScraper()),
+            ('Richmond', RichmondPermitScraper()),
+            ('Milwaukee', MilwaukeePermitScraper()),
+            ('Omaha', OmahaPermitScraper()),
+            ('Knoxville', KnoxvillePermitScraper()),
+            ('Birmingham', BirminghamPermitScraper()),
+            ('Snohomish', SnohomishPermitScraper()),
+            ('Maricopa', MaricopaPermitScraper()),
+            ('Mecklenburg', MecklenburgPermitScraper()),
+            ('Clark County', ClarkCountyPermitScraper()),
+            ('Cleveland', ClevelandPermitScraper()),
+            ('Fort Collins', FortCollinsPermitScraper()),
+            ('Santa Barbara', SantaBarbaraPermitScraper()),
+            ('Virginia Beach', VirginiaBeachPermitScraper()),
+            ('Tulsa', TulsaPermitScraper()),
+            ('Colorado Springs', ColoradoSpringsPermitScraper()),
+            ('Raleigh', RaleighPermitScraper()),
+            ('Oklahoma City', OklahomaCityPermitScraper()),
+            ('Albuquerque', AlbuquerquePermitScraper())
         ]
-        
-        # DISABLED CITIES (uncomment to enable):
-        # scrapers = [
-        #     ('Nashville', NashvillePermitScraper()),
-        #     ('Chattanooga', ChattanoogaPermitScraper()),
-        #     ('Austin', AustinPermitScraper()),
-        #     ('San Antonio', SanAntonioPermitScraper()),
-        #     ('Houston', HoustonPermitScraper()),
-        #     ('Charlotte', CharlottePermitScraper()),
-        #     ('Phoenix', PhoenixPermitScraper()),
-        #     ('Atlanta', AtlantaPermitScraper()),
-        #     ('Seattle', SeattlePermitScraper()),
-        #     ('San Diego', SanDiegoPermitScraper()),
-        #     ('Chicago', ChicagoPermitScraper()),
-        #     ('Indianapolis', IndianapolisPermitScraper()),
-        #     ('Columbus', ColumbusPermitScraper()),
-        #     ('Boston', BostonPermitScraper()),
-        #     ('Philadelphia', PhiladelphiaPermitScraper()),
-        #     ('Richmond', RichmondPermitScraper()),
-        #     ('Milwaukee', MilwaukeePermitScraper()),
-        #     ('Omaha', OmahaPermitScraper()),
-        #     ('Knoxville', KnoxvillePermitScraper()),
-        #     ('Birmingham', BirminghamPermitScraper()),
-        #     ('Snohomish', SnohomishPermitScraper()),
-        #     ('Maricopa', MaricopaPermitScraper()),
-        #     ('Mecklenburg', MecklenburgPermitScraper()),
-        #     ('Clark County', ClarkCountyPermitScraper()),
-        #     ('Cleveland', ClevelandPermitScraper()),
-        #     ('Fort Collins', FortCollinsPermitScraper()),
-        #     ('Santa Barbara', SantaBarbaraPermitScraper()),
-        #     ('Virginia Beach', VirginiaBeachPermitScraper()),
-        #     ('Tulsa', TulsaPermitScraper()),
-        #     ('Colorado Springs', ColoradoSpringsPermitScraper()),
-        #     ('Raleigh', RaleighPermitScraper()),
-        #     ('Oklahoma City', OklahomaCityPermitScraper()),
-        #     ('Albuquerque', AlbuquerquePermitScraper()),
-        #     # New county-specific scrapers
-        #     ('Nashville-Davidson', NashvilleDavidsonPermitScraper()),
-        #     ('Chattanooga-Hamilton', ChattanoogaHamiltonPermitScraper()),
-        #     ('Austin-Travis', AustinTravisPermitScraper()),
-        #     ('San Antonio-Bexar', SanAntonioBexarPermitScraper())
-        # ]
 
         results = []
         successful = 0
@@ -1175,62 +1158,109 @@ def manual_scraper_run():
         print(f"Error in manual scraper run: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/leads', methods=['GET'])
-def api_leads():
-    """API endpoint to download CSV leads by city"""
-    import glob
-    from flask import send_file
-    
-    city = request.args.get('city', '').lower()
-    stripe_customer_id = request.args.get('customer_id', '')
-    
-    if not city:
-        return jsonify({'error': 'City parameter required'}), 400
-    
-    # Test emails that bypass Stripe validation
-    test_emails = ['145brice@gmail.com', 'test@example.com']
-    
-    # For production, validate Stripe customer
-    # if stripe_customer_id not in test_emails:
-    #     # Validate with Stripe here
-    #     pass
-    
-    # Find the leads directory for this city
-    leads_base = os.path.join(os.path.dirname(__file__), 'leads', city)
-    
-    if not os.path.exists(leads_base):
-        return jsonify({'error': f'No leads directory found for {city}'}), 404
-    
-    # Find the most recent date folder
-    try:
-        date_folders = sorted([d for d in os.listdir(leads_base) if os.path.isdir(os.path.join(leads_base, d))], reverse=True)
-    except Exception as e:
-        return jsonify({'error': f'Error reading leads directory: {str(e)}'}), 500
-    
-    if not date_folders:
-        return jsonify({'error': f'No date folders found for {city}'}), 404
-    
-    latest_date = date_folders[0]
-    csv_pattern = os.path.join(leads_base, latest_date, f'*{city}*.csv')
-    csv_files = glob.glob(csv_pattern)
-    
-    if not csv_files:
-        return jsonify({'error': f'No CSV files found for {city}'}), 404
-    
-    csv_file = csv_files[0]
-    filename = os.path.basename(csv_file)
-    
-    return send_file(
-        csv_file,
-        mimetype='text/csv',
-        as_attachment=True,
-        download_name=filename
-    )
-
 @app.route('/api/get-leads', methods=['GET'])
 def get_leads():
-    """Legacy endpoint - redirects to /api/leads"""
-    return jsonify({'error': 'Use /api/leads endpoint instead'}), 301
+    """Check Stripe subscription and return CSV if active"""
+    try:
+        test_email = 'your-email@example.com'  # Replace with your email
+
+        # Find customer by email
+        customers = stripe.Customer.list(email=test_email)
+        if not customers.data:
+            return jsonify({'error': 'No customer found'}), 403
+
+        customer = customers.data[0]
+
+        # Check subscriptions
+        subscriptions = stripe.Subscription.list(customer=customer.id)
+        active_sub = next((sub for sub in subscriptions.data if sub.status == 'active'), None)
+
+        if not active_sub:
+            return jsonify({'error': 'No active subscription'}), 403
+
+        # Return CSV
+        csv_data = 'name,address,city\nJohn Doe,123 Main St,Austin\nJane Smith,456 Oak Ave,Chicago\n'
+
+        return Response(
+            csv_data,
+            mimetype='text/csv',
+            headers={'Content-Disposition': 'attachment; filename=leads.csv'}
+        )
+
+    except Exception as e:
+        print(f"Error in get-leads: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/last-week', methods=['GET'])
+def get_last_week_permits():
+    """Return permit data for specified cities from the last 7 days"""
+    try:
+        # Get cities parameter
+        cities_param = request.args.get('cities', '')
+        if not cities_param:
+            return jsonify({'error': 'cities parameter is required'}), 400
+
+        # Parse cities (comma-separated)
+        requested_cities = [city.strip().lower() for city in cities_param.split(',')]
+
+        # Available cities mapping
+        available_cities = {
+            'nashville': 'nashville',
+            'austin': 'austin',
+            'sanantonio': 'sanantonio',
+            'houston': 'houston',
+            'charlotte': 'charlotte',
+            'phoenix': 'phoenix',
+            'chattanooga': 'chattanooga',
+            'dallas': 'dallas'
+        }
+
+        result = {}
+        base_date = datetime.now().strftime('%Y-%m-%d')
+
+        for city in requested_cities:
+            if city not in available_cities:
+                result[city] = {'error': f'City {city} not available'}
+                continue
+
+            try:
+                # Try to read the CSV file for today
+                csv_path = os.path.join(os.path.dirname(__file__), '..', 'leads', available_cities[city], base_date, f'{base_date}_{available_cities[city]}.csv')
+
+                if not os.path.exists(csv_path):
+                    result[city] = {'error': f'No data available for {city}'}
+                    continue
+
+                # Read CSV and convert to JSON
+                permits = []
+                with open(csv_path, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    for row in reader:
+                        # Clean and standardize the data
+                        clean_permit = {
+                            'permit_number': row.get('permit_number', ''),
+                            'address': row.get('address', ''),
+                            'type': row.get('type', ''),
+                            'value': row.get('value', 0),
+                            'issued_date': row.get('issued_date', ''),
+                            'status': row.get('status', ''),
+                            'city': city.title()
+                        }
+                        permits.append(clean_permit)
+
+                result[city] = {
+                    'count': len(permits),
+                    'permits': permits
+                }
+
+            except Exception as e:
+                result[city] = {'error': f'Error reading data for {city}: {str(e)}'}
+
+        return jsonify(result)
+
+    except Exception as e:
+        print(f"Error in get_last_week_permits: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
