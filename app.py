@@ -1162,34 +1162,21 @@ def manual_scraper_run():
 def get_leads():
     """Check Stripe subscription and return CSV if active"""
     try:
-        customer_id = request.args.get('customer_id')
-        if not customer_id:
-            return jsonify({'error': 'Customer ID required'}), 400
+        test_email = 'your-email@example.com'  # Replace with your email
 
-        # Test emails that bypass Stripe check
-        test_emails = [
-            'test@example.com',
-            'admin@permits.com',
-            '145brice@gmail.com',
-        ]
+        # Find customer by email
+        customers = stripe.Customer.list(email=test_email)
+        if not customers.data:
+            return jsonify({'error': 'No customer found'}), 403
 
-        if customer_id.lower() in [email.lower() for email in test_emails]:
-            # Bypass Stripe for test emails
-            pass
-        else:
-            # Find customer by email
-            customers = stripe.Customer.list(email=customer_id)
-            if not customers.data:
-                return jsonify({'error': 'No customer found'}), 403
+        customer = customers.data[0]
 
-            customer = customers.data[0]
+        # Check subscriptions
+        subscriptions = stripe.Subscription.list(customer=customer.id)
+        active_sub = next((sub for sub in subscriptions.data if sub.status == 'active'), None)
 
-            # Check subscriptions
-            subscriptions = stripe.Subscription.list(customer=customer.id)
-            active_sub = next((sub for sub in subscriptions.data if sub.status == 'active'), None)
-
-            if not active_sub:
-                return jsonify({'error': 'No active subscription'}), 403
+        if not active_sub:
+            return jsonify({'error': 'No active subscription'}), 403
 
         # Return CSV
         csv_data = 'name,address,city\nJohn Doe,123 Main St,Austin\nJane Smith,456 Oak Ave,Chicago\n'
@@ -1204,76 +1191,74 @@ def get_leads():
         print(f"Error in get-leads: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/last-week', methods=['GET'])
-def get_last_week_permits():
-    """Return permit data for specified cities from the last 7 days"""
+@app.route('/api/run-scrapers', methods=['POST'])
+def run_scrapers():
+    """Run scrapers manually (admin endpoint)"""
     try:
-        # Get cities parameter
-        cities_param = request.args.get('cities', '')
-        if not cities_param:
-            return jsonify({'error': 'cities parameter is required'}), 400
+        print("🔄 Manual scraper run triggered")
+        # Run scrapers in background thread
+        thread = threading.Thread(target=run_daily_scrapers, daemon=True)
+        thread.start()
+        return jsonify({'status': 'success', 'message': 'Scraper run initiated'}), 200
+    except Exception as e:
+        print(f"Error in run_scrapers: {e}")
+        return jsonify({'error': str(e)}), 500
 
-        # Parse cities (comma-separated)
-        requested_cities = [city.strip().lower() for city in cities_param.split(',')]
+@app.route('/api/switch/permits', methods=['POST'])
+def switch_permits():
+    """Toggle permits on/off"""
+    try:
+        data = request.get_json()
+        on_state = data.get('on', True)
+        print(f"🔄 Permits switched to: {'ON' if on_state else 'OFF'}")
+        # Here you could save this state to a database or config file
+        return jsonify({'status': 'success', 'permits_on': on_state}), 200
+    except Exception as e:
+        print(f"Error in switch_permits: {e}")
+        return jsonify({'error': str(e)}), 500
 
-        # Available cities mapping
-        available_cities = {
-            'nashville': 'nashville',
-            'austin': 'austin',
-            'sanantonio': 'sanantonio',
-            'houston': 'houston',
-            'charlotte': 'charlotte',
-            'phoenix': 'phoenix',
-            'chattanooga': 'chattanooga',
-            'dallas': 'dallas'
-        }
+@app.route('/api/switch/sold', methods=['POST'])
+def switch_sold():
+    """Toggle sold properties on/off"""
+    try:
+        data = request.get_json()
+        on_state = data.get('on', False)
+        print(f"🔄 Sold properties switched to: {'ON' if on_state else 'OFF'}")
+        # Here you could save this state to a database or config file
+        return jsonify({'status': 'success', 'sold_on': on_state}), 200
+    except Exception as e:
+        print(f"Error in switch_sold: {e}")
+        return jsonify({'error': str(e)}), 500
 
-        result = {}
-        base_date = datetime.now().strftime('%Y-%m-%d')
+@app.route('/api/get-logs', methods=['GET'])
+def get_logs():
+    """Get recent scraper logs"""
+    try:
+        # Read the most recent log files
+        log_files = [
+            'logs/austin.log',
+            'logs/nashville.log',
+            'logs/sanantonio.log'
+        ]
 
-        for city in requested_cities:
-            if city not in available_cities:
-                result[city] = {'error': f'City {city} not available'}
-                continue
+        all_logs = []
+        for log_file in log_files:
+            if os.path.exists(log_file):
+                with open(log_file, 'r') as f:
+                    lines = f.readlines()
+                    # Get last 50 lines from each log
+                    recent_lines = lines[-50:]
+                    all_logs.extend([f"{log_file}: {line.strip()}" for line in recent_lines])
 
-            try:
-                # Try to read the CSV file for today
-                csv_path = os.path.join(os.path.dirname(__file__), '..', 'leads', available_cities[city], base_date, f'{base_date}_{available_cities[city]}.csv')
+        # Sort by timestamp if available, otherwise just return last 100 lines
+        all_logs.sort(reverse=True)
+        recent_logs = all_logs[:100]
 
-                if not os.path.exists(csv_path):
-                    result[city] = {'error': f'No data available for {city}'}
-                    continue
-
-                # Read CSV and convert to JSON
-                permits = []
-                with open(csv_path, 'r', encoding='utf-8') as f:
-                    reader = csv.DictReader(f)
-                    for row in reader:
-                        # Clean and standardize the data
-                        clean_permit = {
-                            'permit_number': row.get('permit_number', ''),
-                            'address': row.get('address', ''),
-                            'type': row.get('type', ''),
-                            'value': row.get('value', 0),
-                            'issued_date': row.get('issued_date', ''),
-                            'status': row.get('status', ''),
-                            'city': city.title()
-                        }
-                        permits.append(clean_permit)
-
-                result[city] = {
-                    'count': len(permits),
-                    'permits': permits
-                }
-
-            except Exception as e:
-                result[city] = {'error': f'Error reading data for {city}: {str(e)}'}
-
-        return jsonify(result)
+        return '\n'.join(recent_logs), 200, {'Content-Type': 'text/plain'}
 
     except Exception as e:
-        print(f"Error in get_last_week_permits: {e}")
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in get_logs: {e}")
+        return f"Error retrieving logs: {str(e)}", 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
