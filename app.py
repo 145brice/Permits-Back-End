@@ -1264,6 +1264,57 @@ def get_logs():
         print(f"Error in get_logs: {e}")
         return f"Error retrieving logs: {str(e)}", 500
 
+@app.route('/last-week', methods=['GET'])
+def last_week():
+    """Return permits from the last week for specified cities"""
+    try:
+        cities_param = request.args.get('cities', 'austin')
+        cities = cities_param.split(',') if cities_param else ['austin']
+        
+        result = {}
+        total_permits = []
+        
+        for city in cities:
+            city = city.strip().lower()
+            # For now, return mock data
+            # In production, this would read from saved permit data
+            mock_permits = [
+                {
+                    'address': f'123 Main St, {city.capitalize()}',
+                    'description': 'New construction permit',
+                    'date': '2026-01-10',
+                    'type': 'Residential'
+                },
+                {
+                    'address': f'456 Oak Ave, {city.capitalize()}',
+                    'description': 'Addition permit',
+                    'date': '2026-01-09',
+                    'type': 'Residential'
+                },
+                {
+                    'address': f'789 Pine Rd, {city.capitalize()}',
+                    'description': 'Electrical permit',
+                    'date': '2026-01-08',
+                    'type': 'Commercial'
+                }
+            ]
+            
+            result[city] = {
+                'count': len(mock_permits),
+                'permits': mock_permits
+            }
+            total_permits.extend(mock_permits)
+        
+        # Also return overall stats
+        result['total_count'] = len(total_permits)
+        result['all_permits'] = total_permits
+        
+        return jsonify(result), 200
+    
+    except Exception as e:
+        print(f"Error in last-week: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
+    port = int(os.getenv('PORT', 5000)
     app.run(host='0.0.0.0', port=port)
