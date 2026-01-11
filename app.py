@@ -73,10 +73,14 @@ FROM_EMAIL = os.getenv('FROM_EMAIL')
 
 # Firebase credentials from service account key file
 if not firebase_admin._apps:
-    cred = credentials.Certificate('serviceAccountKey.json')
-    firebase_admin.initialize_app(cred)
+    try:
+        cred = credentials.Certificate('serviceAccountKey.json')
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+    except Exception as e:
+        print(f"Firebase initialization failed: {e}")
+        db = None
 
-db = firestore.client()
 stripe.api_key = STRIPE_SECRET_KEY
 
 # City to price mapping (you'll add real price IDs after creating them in Stripe)
