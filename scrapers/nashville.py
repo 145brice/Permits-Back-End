@@ -41,7 +41,9 @@ class NashvillePermitScraper:
                 'limit': 20,
                 'f': 'json'
             }
-            response = requests.get(search_url, params=params, timeout=30)
+            response = safe_request(requests, search_url, params=params, timeout=60, max_retries=3)
+            if response is None:
+                return []
             response.raise_for_status()
             data = response.json()
 
@@ -61,7 +63,7 @@ class NashvillePermitScraper:
     def _fetch_arcgis_batch(self, params):
         """Fetch ArcGIS data with retry logic"""
         url = f"{self.arcgis_base_url}/{self.dataset_id}/query"
-        response = requests.get(url, params=params, timeout=30)
+        response = requests.get(url, params=params, timeout=60)
         response.raise_for_status()
         return response.json()
 
@@ -100,7 +102,14 @@ class NashvillePermitScraper:
                             'f': 'json'
                         }
 
-                        response = requests.get(endpoint_url, params=params, timeout=30)
+                        response = safe_request(requests, endpoint_url, params=params, timeout=60, max_retries=5)
+                        if response is None:
+                            self.logger.warning(f"Failed to get data from {endpoint_name} at offset {offset}")
+                            consecutive_failures += 1
+                            if consecutive_failures >= 3:
+                                self.logger.error(f"Too many consecutive failures on {endpoint_name}")
+                                break
+                            continue
                         response.raise_for_status()
                         data = response.json()
 
