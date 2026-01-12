@@ -1463,8 +1463,33 @@ def get_leads_structure():
                     'dates': dates
                 })
         
-        return jsonify({'cities': cities}), 200
-    
+        # Get Supabase database counts separately
+        supabase_stats = None
+        if supabase:
+            try:
+                city_list = ['austin', 'nashville', 'houston', 'sanantonio']
+                supabase_stats = {'cities': {}}
+
+                for city in city_list:
+                    try:
+                        city_result = supabase.table('permits').select('*', count='exact').eq('city', city).execute()
+                        supabase_stats['cities'][city] = city_result.count if hasattr(city_result, 'count') else 0
+                    except:
+                        supabase_stats['cities'][city] = 0
+
+                # Get total
+                total_result = supabase.table('permits').select('*', count='exact').execute()
+                supabase_stats['total'] = total_result.count if hasattr(total_result, 'count') else 0
+
+            except Exception as e:
+                print(f"Error getting Supabase stats: {e}")
+                supabase_stats = {'error': str(e)}
+
+        return jsonify({
+            'cities': cities,
+            'supabase': supabase_stats
+        }), 200
+
     except Exception as e:
         print(f"Error in get-leads-structure: {e}")
         return jsonify({'error': str(e)}), 500
