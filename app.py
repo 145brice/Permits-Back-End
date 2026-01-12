@@ -1363,34 +1363,70 @@ def last_week():
         
         for city in cities:
             city = city.strip().lower()
-            # For now, return mock data
-            # In production, this would read from saved permit data
-            mock_permits = [
-                {
-                    'address': f'123 Main St, {city.capitalize()}',
-                    'description': 'New construction permit',
-                    'date': '2026-01-10',
-                    'type': 'Residential'
-                },
-                {
-                    'address': f'456 Oak Ave, {city.capitalize()}',
-                    'description': 'Addition permit',
-                    'date': '2026-01-09',
-                    'type': 'Residential'
-                },
-                {
-                    'address': f'789 Pine Rd, {city.capitalize()}',
-                    'description': 'Electrical permit',
-                    'date': '2026-01-08',
-                    'type': 'Commercial'
-                }
-            ]
+            city_permits = []
+            
+            # Check if leads folder exists
+            leads_dir = 'leads'
+            city_dir = os.path.join(leads_dir, city)
+            if os.path.exists(city_dir):
+                # Get all date folders, sorted by date descending
+                date_folders = sorted([d for d in os.listdir(city_dir) if os.path.isdir(os.path.join(city_dir, d))], reverse=True)
+                
+                # Take the most recent 7 days (or all if less)
+                recent_dates = date_folders[:7]
+                
+                for date_folder in recent_dates:
+                    date_path = os.path.join(city_dir, date_folder)
+                    # Find CSV files in this date folder
+                    csv_files = [f for f in os.listdir(date_path) if f.endswith('.csv')]
+                    for csv_file in csv_files:
+                        csv_path = os.path.join(date_path, csv_file)
+                        try:
+                            with open(csv_path, 'r', encoding='utf-8') as f:
+                                reader = csv.DictReader(f)
+                                for row in reader:
+                                    # Convert to the format expected by frontend
+                                    permit = {
+                                        'address': row.get('address', 'Unknown Address'),
+                                        'description': row.get('permit_type', '') + ' - ' + row.get('description', ''),
+                                        'date': row.get('issue_date', date_folder),
+                                        'type': row.get('permit_type', 'Permit'),
+                                        'permit_number': row.get('permit_number', ''),
+                                        'value': row.get('permit_value', '')
+                                    }
+                                    city_permits.append(permit)
+                        except Exception as e:
+                            print(f"Error reading {csv_path}: {e}")
+            
+            # If no real data, fall back to mock
+            if not city_permits:
+                mock_permits = [
+                    {
+                        'address': f'123 Main St, {city.capitalize()}',
+                        'description': 'New construction permit',
+                        'date': '2026-01-10',
+                        'type': 'Residential'
+                    },
+                    {
+                        'address': f'456 Oak Ave, {city.capitalize()}',
+                        'description': 'Addition permit',
+                        'date': '2026-01-09',
+                        'type': 'Residential'
+                    },
+                    {
+                        'address': f'789 Pine Rd, {city.capitalize()}',
+                        'description': 'Electrical permit',
+                        'date': '2026-01-08',
+                        'type': 'Commercial'
+                    }
+                ]
+                city_permits = mock_permits
             
             result[city] = {
-                'count': len(mock_permits),
-                'permits': mock_permits
+                'count': len(city_permits),
+                'permits': city_permits
             }
-            total_permits.extend(mock_permits)
+            total_permits.extend(city_permits)
         
         # Also return overall stats
         result['total_count'] = len(total_permits)
