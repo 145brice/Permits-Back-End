@@ -2,6 +2,32 @@
 
 Backend API for the Contractor Leads SaaS platform. This service handles permit data scraping, user management, and email distribution.
 
+## ⚠️ IMPORTANT: API Keys & Credentials
+
+### All API Keys (SAVE THESE!)
+
+| Service | Key | Created | Notes |
+|---------|-----|---------|-------|
+| **MapTiler** | `jEn4MW4VhPVe82B3bazQ` | 2026-01-07 | Map tiles for frontend |
+| **Stripe** | Set in Render env vars | - | Payment processing |
+| **SendGrid** | Set in Render env vars | - | Email delivery |
+| **Firebase** | serviceAccountKey.json | - | Database (optional) |
+
+### Render Environment Variables
+```bash
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+SENDGRID_API_KEY=SG....
+OWNER_EMAIL=145brice@gmail.com
+FROM_EMAIL=leads@yourdomain.com
+ADMIN_SECRET=admin123
+```
+
+### Paid/Admin Emails (hardcoded bypass)
+- 145brice@gmail.com
+- test@example.com
+- admin@permits.com
+
 ## Features
 
 - **Permit Scraping**: Automated daily scraping from multiple city data sources
