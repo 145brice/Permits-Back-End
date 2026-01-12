@@ -13,6 +13,12 @@ Backend API for the Contractor Leads SaaS platform. This service handles permit 
 | **SendGrid** | Set in Render env vars | - | Email delivery |
 | **Firebase** | serviceAccountKey.json | - | Database (optional) |
 
+### Supabase Database
+- **Project URL**: `https://zppsfwxycmujqetsnbtj.supabase.co`
+- **Anon Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwcHNmd3h5Y211anFldHNuYnRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxNzMzNzAsImV4cCI6MjA4Mzc0OTM3MH0.WMHBIe9vACzzBx4Y2t4sNonEWgm0IvYPMyy3tV-eujo`
+- **Service Role Key**: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwcHNmd3h5Y211anFldHNuYnRqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODE3MzM3MCwiZXhwIjoyMDgzNzQ5MzcwfQ.R9ptEOkGAc3xVBf9fgAa3Tse3LWzDGT0VdrcZ4WsaGk`
+- **Dashboard**: https://supabase.com/dashboard/project/zppsfwxycmujqetsnbtj
+
 ### Render Environment Variables
 ```bash
 STRIPE_SECRET_KEY=sk_test_...
