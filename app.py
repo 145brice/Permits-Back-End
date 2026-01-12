@@ -1398,29 +1398,9 @@ def last_week():
                         except Exception as e:
                             print(f"Error reading {csv_path}: {e}")
             
-            # If no real data, fall back to mock
+            # If no real data, return empty
             if not city_permits:
-                mock_permits = [
-                    {
-                        'address': f'123 Main St, {city.capitalize()}',
-                        'description': 'New construction permit',
-                        'date': '2026-01-10',
-                        'type': 'Residential'
-                    },
-                    {
-                        'address': f'456 Oak Ave, {city.capitalize()}',
-                        'description': 'Addition permit',
-                        'date': '2026-01-09',
-                        'type': 'Residential'
-                    },
-                    {
-                        'address': f'789 Pine Rd, {city.capitalize()}',
-                        'description': 'Electrical permit',
-                        'date': '2026-01-08',
-                        'type': 'Commercial'
-                    }
-                ]
-                city_permits = mock_permits
+                city_permits = []
             
             result[city] = {
                 'count': len(city_permits),
