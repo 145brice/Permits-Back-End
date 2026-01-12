@@ -65,6 +65,18 @@ from scrapers import (
 # Load environment variables from .env file
 load_dotenv()
 
+# Supabase setup
+from supabase import create_client, Client
+SUPABASE_URL = os.getenv('SUPABASE_URL', 'https://zppsfwxycmujqetsnbtj.supabase.co')
+SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwcHNmd3h5Y211anFldHNuYnRqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODE3MzM3MCwiZXhwIjoyMDgzNzQ5MzcwfQ.R9ptEOkGAc3xVBf9fgAa3Tse3LWzDGT0VdrcZ4WsaGk')
+
+try:
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    print("Supabase connected successfully")
+except Exception as e:
+    print(f"Supabase connection failed: {e}")
+    supabase = None
+
 app = Flask(__name__)
 CORS(app)
 
@@ -1355,16 +1367,26 @@ def get_leads_structure():
 # MapTiler API key for geocoding
 MAPTILER_API_KEY = os.getenv('MAPTILER_API_KEY', 'jEn4MW4VhPVe82B3bazQ')
 
-# Simple geocoding cache to avoid repeated API calls
+# In-memory cache as fallback
 geocode_cache = {}
 
 def geocode_address(address, city='Austin, TX'):
-    """Convert address to lat/lng using MapTiler Geocoding API"""
+    """Convert address to lat/lng using Supabase cache first, then MapTiler API"""
     if not address or address == 'Unknown Address':
         return None, None
     
-    # Check cache first
+    # Check Supabase cache first
     cache_key = f"{address}_{city}"
+    
+    if supabase:
+        try:
+            result = supabase.table('geocode_cache').select('lat, lng').eq('address', address).eq('city', city).execute()
+            if result.data and len(result.data) > 0:
+                return result.data[0]['lat'], result.data[0]['lng']
+        except Exception as e:
+            print(f"Supabase cache read error: {e}")
+    
+    # Check in-memory cache
     if cache_key in geocode_cache:
         return geocode_cache[cache_key]
     
@@ -1381,6 +1403,20 @@ def geocode_address(address, city='Austin, TX'):
             if data.get('features') and len(data['features']) > 0:
                 coords = data['features'][0]['geometry']['coordinates']
                 lng, lat = coords[0], coords[1]
+                
+                # Save to Supabase cache
+                if supabase:
+                    try:
+                        supabase.table('geocode_cache').upsert({
+                            'address': address,
+                            'city': city,
+                            'lat': lat,
+                            'lng': lng
+                        }, on_conflict='address,city').execute()
+                    except Exception as e:
+                        print(f"Supabase cache write error: {e}")
+                
+                # Also save to in-memory cache
                 geocode_cache[cache_key] = (lat, lng)
                 return lat, lng
     except Exception as e:
@@ -1391,10 +1427,11 @@ def geocode_address(address, city='Austin, TX'):
 
 @app.route('/last-week', methods=['GET'])
 def last_week():
-    """Return permits from the most recent scraped data for specified cities"""
+    """Return permits from Supabase (primary) or CSV files (fallback)"""
     try:
         cities_param = request.args.get('cities', 'austin')
         cities = cities_param.split(',') if cities_param else ['austin']
+        use_supabase = request.args.get('source', 'supabase') == 'supabase'
         
         result = {}
         total_permits = []
@@ -1403,49 +1440,87 @@ def last_week():
             city = city.strip().lower()
             city_permits = []
             
-            # Check if leads folder exists
-            leads_dir = 'leads'
-            city_dir = os.path.join(leads_dir, city)
-            if os.path.exists(city_dir):
-                # Get all date folders, sorted by date descending (most recent first)
-                date_folders = sorted([d for d in os.listdir(city_dir) if os.path.isdir(os.path.join(city_dir, d))], reverse=True)
-                
-                # Look through ALL date folders until we find data (not just last 7)
-                for date_folder in date_folders:
-                    date_path = os.path.join(city_dir, date_folder)
-                    # Find CSV files in this date folder
-                    csv_files = [f for f in os.listdir(date_path) if f.endswith('.csv')]
-                    for csv_file in csv_files:
-                        csv_path = os.path.join(date_path, csv_file)
-                        try:
-                            with open(csv_path, 'r', encoding='utf-8') as f:
-                                reader = csv.DictReader(f)
-                                for row in reader:
-                                    address = row.get('address', 'Unknown Address')
-                                    
-                                    # Geocode the address to get real coordinates
-                                    city_name = city.replace('_', ' ').title()
-                                    lat, lng = geocode_address(address, f"{city_name}, USA")
-                                    
-                                    # Convert to the format expected by frontend
-                                    permit = {
-                                        'address': address,
-                                        'description': row.get('permit_type', '') + ' - ' + row.get('description', ''),
-                                        'date': row.get('issue_date', row.get('date', date_folder)),
-                                        'type': row.get('permit_type', 'Permit'),
-                                        'permit_number': row.get('permit_number', ''),
-                                        'value': row.get('permit_value', row.get('estimated_cost', '')),
-                                        'lat': lat,
-                                        'lng': lng
-                                    }
-                                    city_permits.append(permit)
-                        except Exception as e:
-                            print(f"Error reading {csv_path}: {e}")
+            # Try Supabase first if available
+            if supabase and use_supabase:
+                try:
+                    # Get permits from last 30 days for this city
+                    from datetime import datetime, timedelta
+                    cutoff_date = (datetime.now() - timedelta(days=30)).isoformat()
                     
-                    # If we found permits, stop looking in older folders
-                    # (but continue if this folder was empty)
-                    if city_permits:
-                        break
+                    db_result = supabase.table('permits').select('*').eq('city', city).gte('issue_date', cutoff_date).order('issue_date', desc=True).limit(500).execute()
+                    
+                    if db_result.data:
+                        for row in db_result.data:
+                            permit = {
+                                'address': row.get('address', 'Unknown Address'),
+                                'description': f"{row.get('permit_type', '')} - {row.get('description', '')}",
+                                'date': row.get('issue_date', ''),
+                                'type': row.get('permit_type', 'Permit'),
+                                'permit_number': row.get('permit_number', ''),
+                                'value': row.get('permit_value', ''),
+                                'lat': row.get('lat'),
+                                'lng': row.get('lng')
+                            }
+                            city_permits.append(permit)
+                        print(f"Loaded {len(city_permits)} permits for {city} from Supabase")
+                except Exception as e:
+                    print(f"Supabase error for {city}: {e}")
+                    city_permits = []  # Fall back to CSV
+            
+            # Fall back to CSV files if no Supabase data
+            if not city_permits:
+                leads_dir = 'leads'
+                city_dir = os.path.join(leads_dir, city)
+                if os.path.exists(city_dir):
+                    date_folders = sorted([d for d in os.listdir(city_dir) if os.path.isdir(os.path.join(city_dir, d))], reverse=True)
+                    
+                    for date_folder in date_folders:
+                        date_path = os.path.join(city_dir, date_folder)
+                        csv_files = [f for f in os.listdir(date_path) if f.endswith('.csv')]
+                        for csv_file in csv_files:
+                            csv_path = os.path.join(date_path, csv_file)
+                            try:
+                                with open(csv_path, 'r', encoding='utf-8') as f:
+                                    reader = csv.DictReader(f)
+                                    for row in reader:
+                                        address = row.get('address', 'Unknown Address')
+                                        
+                                        city_name = city.replace('_', ' ').title()
+                                        lat, lng = geocode_address(address, f"{city_name}, USA")
+                                        
+                                        permit = {
+                                            'address': address,
+                                            'description': row.get('permit_type', '') + ' - ' + row.get('description', ''),
+                                            'date': row.get('issue_date', row.get('date', date_folder)),
+                                            'type': row.get('permit_type', 'Permit'),
+                                            'permit_number': row.get('permit_number', ''),
+                                            'value': row.get('permit_value', row.get('estimated_cost', '')),
+                                            'lat': lat,
+                                            'lng': lng
+                                        }
+                                        city_permits.append(permit)
+                                        
+                                        # Also save to Supabase for next time
+                                        if supabase and lat and lng:
+                                            try:
+                                                supabase.table('permits').upsert({
+                                                    'permit_number': permit['permit_number'] or f"{city}_{address[:50]}",
+                                                    'address': address,
+                                                    'city': city,
+                                                    'permit_type': row.get('permit_type', 'Permit'),
+                                                    'description': row.get('description', ''),
+                                                    'issue_date': permit['date'],
+                                                    'permit_value': permit['value'],
+                                                    'lat': lat,
+                                                    'lng': lng
+                                                }, on_conflict='permit_number').execute()
+                                            except Exception as e:
+                                                pass  # Silent fail for duplicate inserts
+                            except Exception as e:
+                                print(f"Error reading {csv_path}: {e}")
+                        
+                        if city_permits:
+                            break
             
             result[city] = {
                 'count': len(city_permits),
@@ -1453,9 +1528,9 @@ def last_week():
             }
             total_permits.extend(city_permits)
         
-        # Also return overall stats
         result['total_count'] = len(total_permits)
         result['all_permits'] = total_permits
+        result['source'] = 'supabase' if (supabase and use_supabase) else 'csv'
         
         return jsonify(result), 200
     
