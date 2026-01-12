@@ -1,5 +1,6 @@
 import os
 import stripe
+import requests as http_requests
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from datetime import datetime, timedelta
@@ -1374,7 +1375,7 @@ def geocode_address(address, city='Austin, TX'):
         
         url = f"https://api.maptiler.com/geocoding/{encoded_address}.json?key={MAPTILER_API_KEY}"
         
-        response = requests.get(url, timeout=5)
+        response = http_requests.get(url, timeout=5)
         if response.status_code == 200:
             data = response.json()
             if data.get('features') and len(data['features']) > 0:
