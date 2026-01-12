@@ -1197,16 +1197,64 @@ def get_leads():
 
 @app.route('/api/run-scrapers', methods=['POST'])
 def run_scrapers():
-    """Run scrapers manually (admin endpoint)"""
+    """Run scrapers manually (admin endpoint) - no delay for manual runs"""
     try:
-        print("🔄 Manual scraper run triggered")
-        # Run scrapers in background thread
-        thread = threading.Thread(target=run_daily_scrapers, daemon=True)
+        print("🔄 Manual scraper run triggered - starting immediately")
+        # Run scrapers in background thread without delay
+        thread = threading.Thread(target=run_manual_scrapers, daemon=True)
         thread.start()
-        return jsonify({'status': 'success', 'message': 'Scraper run initiated'}), 200
+        return jsonify({'status': 'success', 'message': 'Scraper run initiated - check logs in 10 seconds'}), 200
     except Exception as e:
         print(f"Error in run_scrapers: {e}")
         return jsonify({'error': str(e)}), 500
+
+def run_manual_scrapers():
+    """Run scrapers immediately without delay (for manual admin triggers)"""
+    print(f"🚀 Manual scraper run starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} CST")
+    print("=" * 80)
+
+    # Priority cities for manual runs
+    scrapers = [
+        ('Austin', AustinPermitScraper()),
+        ('Nashville', NashvillePermitScraper()),
+        ('Houston', HoustonPermitScraper()),
+        ('San Antonio', SanAntonioPermitScraper()),
+    ]
+
+    results = []
+    successful = 0
+    failed = 0
+
+    print(f"🔄 Running {len(scrapers)} scrapers...")
+
+    for city_name, scraper in scrapers:
+        try:
+            print(f"\n🏗️  Scraping {city_name}...")
+            start_time = time_module.time()
+
+            permits = scraper.run()
+            elapsed = time_module.time() - start_time
+
+            if permits and len(permits) > 0:
+                results.append(f"✅ {city_name}: {len(permits)} permits ({elapsed:.1f}s)")
+                print(f"✅ {city_name}: Successfully scraped {len(permits)} permits in {elapsed:.1f}s")
+                successful += 1
+            else:
+                results.append(f"⚠️  {city_name}: No permits found")
+                print(f"⚠️  {city_name}: No permits found")
+                failed += 1
+
+        except Exception as e:
+            results.append(f"❌ {city_name}: Error - {str(e)}")
+            print(f"❌ {city_name}: Error - {str(e)}")
+            failed += 1
+
+    print("\n" + "=" * 80)
+    print(f"✅ Manual scraper run complete!")
+    print(f"📊 Results: {successful} successful, {failed} failed")
+    for result in results:
+        print(f"   {result}")
+    print("=" * 80)
 
 @app.route('/api/switch/permits', methods=['POST'])
 def switch_permits():
@@ -1242,7 +1290,8 @@ def get_logs():
         log_files = [
             'logs/austin.log',
             'logs/nashville.log',
-            'logs/sanantonio.log'
+            'logs/sanantonio.log',
+            'logs/houston.log'
         ]
 
         all_logs = []
