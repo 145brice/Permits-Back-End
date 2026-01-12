@@ -16,6 +16,9 @@ import random
 import time as time_module
 import threading
 
+# Global flag to stop scrapers
+stop_scrapers = False
+
 # Import scrapers
 from scrapers import (
     # Original 7 cities
@@ -961,6 +964,10 @@ def run_daily_scrapers():
         print(f"🚀 Starting daily scraper run at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} CST")
         print("=" * 80)
 
+        # Reset stop flag
+        global stop_scrapers
+        stop_scrapers = False
+
         # ALL 33 CITIES ENABLED WITH AUTO-RECOVERY
         # System tries real APIs first, uses fallback data if APIs fail
         # This ensures subscribers ALWAYS get leads daily
@@ -1009,6 +1016,9 @@ def run_daily_scrapers():
         print(f"💡 System will use fallback data if scrapers fail - subscribers always get leads!")
 
         for city_name, scraper in scrapers:
+            if stop_scrapers:
+                print(f"\n🛑 Scraper run stopped by user request")
+                break
             try:
                 print(f"\n🏗️  Scraping {city_name}...")
                 start_time = time_module.time()
@@ -1250,6 +1260,18 @@ def switch_sold():
         return jsonify({'status': 'success', 'sold_on': on_state}), 200
     except Exception as e:
         print(f"Error in switch_sold: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stop-scrapers', methods=['POST'])
+def stop_scrapers_endpoint():
+    """Stop the running scraper process"""
+    global stop_scrapers
+    try:
+        stop_scrapers = True
+        print("🛑 Scraper stop signal sent")
+        return jsonify({'status': 'success', 'message': 'Scraper stop signal sent'}), 200
+    except Exception as e:
+        print(f"Error in stop_scrapers: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/get-logs', methods=['GET'])
