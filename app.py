@@ -77,6 +77,97 @@ except Exception as e:
     print(f"Supabase connection failed: {e}")
     supabase = None
 
+# ============ SUPABASE SUBSCRIBER FUNCTIONS ============
+def save_subscriber_to_supabase(email, city, amount_paid, stripe_customer_id=None, subscription_id=None, cities=None):
+    """Save a new subscriber to Supabase"""
+    if not supabase:
+        print("Supabase not available, skipping subscriber save")
+        return None
+    
+    try:
+        data = {
+            'email': email,
+            'city': city,
+            'amount_paid': amount_paid,
+            'stripe_customer_id': stripe_customer_id,
+            'subscription_id': subscription_id,
+            'active': True,
+            'created_at': datetime.utcnow().isoformat()
+        }
+        
+        # For All Cities Bundle, store the cities list as JSON string
+        if cities:
+            import json
+            data['cities'] = json.dumps(cities)
+        
+        result = supabase.table('subscribers').insert(data).execute()
+        print(f"✅ Saved subscriber to Supabase: {email}")
+        return result.data[0] if result.data else None
+    except Exception as e:
+        print(f"❌ Error saving subscriber to Supabase: {e}")
+        return None
+
+def get_all_subscribers():
+    """Get all subscribers from Supabase"""
+    if not supabase:
+        return []
+    
+    try:
+        result = supabase.table('subscribers').select('*').order('created_at', desc=True).execute()
+        return result.data if result.data else []
+    except Exception as e:
+        print(f"Error fetching subscribers: {e}")
+        return []
+
+def get_active_subscribers(city=None):
+    """Get active subscribers, optionally filtered by city"""
+    if not supabase:
+        return []
+    
+    try:
+        query = supabase.table('subscribers').select('*').eq('active', True)
+        if city:
+            query = query.eq('city', city)
+        result = query.order('created_at', desc=True).execute()
+        return result.data if result.data else []
+    except Exception as e:
+        print(f"Error fetching active subscribers: {e}")
+        return []
+
+def update_subscriber_status(subscriber_id, active):
+    """Update subscriber active status"""
+    if not supabase:
+        return False
+    
+    try:
+        data = {'active': active}
+        if not active:
+            data['cancelled_at'] = datetime.utcnow().isoformat()
+        
+        supabase.table('subscribers').update(data).eq('id', subscriber_id).execute()
+        return True
+    except Exception as e:
+        print(f"Error updating subscriber: {e}")
+        return False
+
+def deactivate_subscriber_by_stripe_id(stripe_customer_id):
+    """Deactivate subscriber by Stripe customer ID"""
+    if not supabase:
+        return False
+    
+    try:
+        data = {
+            'active': False,
+            'cancelled_at': datetime.utcnow().isoformat()
+        }
+        supabase.table('subscribers').update(data).eq('stripe_customer_id', stripe_customer_id).execute()
+        return True
+    except Exception as e:
+        print(f"Error deactivating subscriber: {e}")
+        return False
+
+# ============ END SUPABASE SUBSCRIBER FUNCTIONS ============
+
 app = Flask(__name__)
 CORS(app)
 
@@ -186,6 +277,15 @@ def webhook():
                 'created_at': firestore.SERVER_TIMESTAMP
             })
             
+            # Also save to Supabase
+            save_subscriber_to_supabase(
+                email=email,
+                city=city,
+                amount_paid=0,  # Subscription - amount tracked by Stripe
+                stripe_customer_id=customer_id,
+                subscription_id=subscription_id
+            )
+            
             # Create Firebase Auth user account
             try:
                 user = auth.create_user(
@@ -239,6 +339,16 @@ def webhook():
                     'amount_paid': amount_total,
                     'created_at': firestore.SERVER_TIMESTAMP
                 })
+                
+                # Also save to Supabase
+                save_subscriber_to_supabase(
+                    email=customer_email,
+                    city=city,
+                    amount_paid=amount_total,
+                    stripe_customer_id=customer_id,
+                    subscription_id=session.get('subscription'),
+                    cities=all_cities
+                )
                 
                 # Create Firebase Auth user account
                 try:
@@ -375,6 +485,15 @@ Date: {lead['issue_date']}
                     'created_at': firestore.SERVER_TIMESTAMP
                 })
                 
+                # Also save to Supabase
+                save_subscriber_to_supabase(
+                    email=customer_email,
+                    city=city,
+                    amount_paid=amount_total,
+                    stripe_customer_id=customer_id,
+                    subscription_id=session.get('subscription')
+                )
+                
                 # Create Firebase Auth user account
                 try:
                     user = auth.create_user(
@@ -479,11 +598,14 @@ Date: {lead['issue_date']}
         invoice = event['data']['object']
         customer_id = invoice['customer']
         
-        # Update subscriber to inactive
+        # Update subscriber to inactive in Firebase
         db.collection('subscribers').document(customer_id).update({
             'active': False,
             'payment_failed_at': firestore.SERVER_TIMESTAMP
         })
+        
+        # Also update in Supabase
+        deactivate_subscriber_by_stripe_id(customer_id)
         
         print(f"Payment failed for customer: {customer_id}")
     
@@ -492,15 +614,110 @@ Date: {lead['issue_date']}
         subscription = event['data']['object']
         customer_id = subscription['customer']
         
-        # Update subscriber to inactive
+        # Update subscriber to inactive in Firebase
         db.collection('subscribers').document(customer_id).update({
             'active': False,
             'cancelled_at': firestore.SERVER_TIMESTAMP
         })
         
+        # Also update in Supabase
+        deactivate_subscriber_by_stripe_id(customer_id)
+        
         print(f"Subscription cancelled for customer: {customer_id}")
     
     return jsonify({'status': 'success'}), 200
+
+# ============ CLIENT/SUBSCRIBER MANAGEMENT ENDPOINTS ============
+
+@app.route('/clients', methods=['GET'])
+def get_clients():
+    """Get all subscribers/clients from Supabase"""
+    try:
+        subscribers = get_all_subscribers()
+        
+        # Parse cities JSON for bundle subscribers
+        import json
+        for sub in subscribers:
+            if sub.get('cities') and isinstance(sub['cities'], str):
+                try:
+                    sub['cities'] = json.loads(sub['cities'])
+                except:
+                    pass
+        
+        return jsonify({
+            'success': True,
+            'total': len(subscribers),
+            'clients': subscribers
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/clients/active', methods=['GET'])
+def get_active_clients():
+    """Get all active subscribers from Supabase"""
+    try:
+        city = request.args.get('city')
+        subscribers = get_active_subscribers(city)
+        
+        return jsonify({
+            'success': True,
+            'total': len(subscribers),
+            'filter': {'city': city} if city else None,
+            'clients': subscribers
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/clients/<int:client_id>/deactivate', methods=['POST'])
+def deactivate_client(client_id):
+    """Deactivate a client by ID"""
+    try:
+        success = update_subscriber_status(client_id, False)
+        if success:
+            return jsonify({'success': True, 'message': f'Client {client_id} deactivated'})
+        return jsonify({'success': False, 'error': 'Failed to update'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/clients/<int:client_id>/activate', methods=['POST'])
+def activate_client(client_id):
+    """Reactivate a client by ID"""
+    try:
+        success = update_subscriber_status(client_id, True)
+        if success:
+            return jsonify({'success': True, 'message': f'Client {client_id} activated'})
+        return jsonify({'success': False, 'error': 'Failed to update'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/clients/add', methods=['POST'])
+def add_client():
+    """Manually add a client (for testing or manual entry)"""
+    try:
+        data = request.json
+        email = data.get('email')
+        city = data.get('city', 'Unknown')
+        amount_paid = data.get('amount_paid', 0)
+        
+        if not email:
+            return jsonify({'success': False, 'error': 'Email is required'}), 400
+        
+        result = save_subscriber_to_supabase(
+            email=email,
+            city=city,
+            amount_paid=amount_paid,
+            stripe_customer_id=data.get('stripe_customer_id'),
+            subscription_id=data.get('subscription_id'),
+            cities=data.get('cities')
+        )
+        
+        if result:
+            return jsonify({'success': True, 'client': result})
+        return jsonify({'success': False, 'error': 'Failed to add client'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============ END CLIENT MANAGEMENT ENDPOINTS ============
 
 def get_leads_for_city(city, count=10):
     """Get REAL leads from scraped CSV files with auto-fallback to cached data"""
