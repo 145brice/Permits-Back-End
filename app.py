@@ -1351,6 +1351,43 @@ def get_leads_structure():
         print(f"Error in get-leads-structure: {e}")
         return jsonify({'error': str(e)}), 500
 
+# MapTiler API key for geocoding
+MAPTILER_API_KEY = os.getenv('MAPTILER_API_KEY', 'jEn4MW4VhPVe82B3bazQ')
+
+# Simple geocoding cache to avoid repeated API calls
+geocode_cache = {}
+
+def geocode_address(address, city='Austin, TX'):
+    """Convert address to lat/lng using MapTiler Geocoding API"""
+    if not address or address == 'Unknown Address':
+        return None, None
+    
+    # Check cache first
+    cache_key = f"{address}_{city}"
+    if cache_key in geocode_cache:
+        return geocode_cache[cache_key]
+    
+    try:
+        # Build full address query
+        full_address = f"{address}, {city}"
+        encoded_address = full_address.replace(' ', '%20').replace(',', '%2C')
+        
+        url = f"https://api.maptiler.com/geocoding/{encoded_address}.json?key={MAPTILER_API_KEY}"
+        
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('features') and len(data['features']) > 0:
+                coords = data['features'][0]['geometry']['coordinates']
+                lng, lat = coords[0], coords[1]
+                geocode_cache[cache_key] = (lat, lng)
+                return lat, lng
+    except Exception as e:
+        print(f"Geocoding error for {address}: {e}")
+    
+    geocode_cache[cache_key] = (None, None)
+    return None, None
+
 @app.route('/last-week', methods=['GET'])
 def last_week():
     """Return permits from the last week for specified cities"""
@@ -1385,14 +1422,22 @@ def last_week():
                             with open(csv_path, 'r', encoding='utf-8') as f:
                                 reader = csv.DictReader(f)
                                 for row in reader:
+                                    address = row.get('address', 'Unknown Address')
+                                    
+                                    # Geocode the address to get real coordinates
+                                    city_name = city.replace('_', ' ').title()
+                                    lat, lng = geocode_address(address, f"{city_name}, USA")
+                                    
                                     # Convert to the format expected by frontend
                                     permit = {
-                                        'address': row.get('address', 'Unknown Address'),
+                                        'address': address,
                                         'description': row.get('permit_type', '') + ' - ' + row.get('description', ''),
                                         'date': row.get('issue_date', date_folder),
                                         'type': row.get('permit_type', 'Permit'),
                                         'permit_number': row.get('permit_number', ''),
-                                        'value': row.get('permit_value', '')
+                                        'value': row.get('permit_value', ''),
+                                        'lat': lat,
+                                        'lng': lng
                                     }
                                     city_permits.append(permit)
                         except Exception as e:
