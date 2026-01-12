@@ -64,6 +64,9 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+# Global scraper kill switch
+scraper_kill_switch = threading.Event()  # When set, scrapers should stop
+
 # Environment variables
 STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
@@ -1208,8 +1211,22 @@ def run_scrapers():
         print(f"Error in run_scrapers: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/stop-scrapers', methods=['POST'])
+def stop_scrapers():
+    """Emergency kill switch to stop running scrapers"""
+    try:
+        print("🛑 KILL SWITCH ACTIVATED - Stopping scrapers")
+        scraper_kill_switch.set()  # Signal all scrapers to stop
+        return jsonify({'status': 'success', 'message': 'Kill switch activated - scrapers will stop after current city'}), 200
+    except Exception as e:
+        print(f"Error in stop_scrapers: {e}")
+        return jsonify({'error': str(e)}), 500
+
 def run_manual_scrapers():
     """Run scrapers immediately without delay (for manual admin triggers)"""
+    # Clear kill switch at start
+    scraper_kill_switch.clear()
+
     print(f"🚀 Manual scraper run starting at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} CST")
     print("=" * 80)
 
@@ -1228,6 +1245,12 @@ def run_manual_scrapers():
     print(f"🔄 Running {len(scrapers)} scrapers...")
 
     for city_name, scraper in scrapers:
+        # Check kill switch before each city
+        if scraper_kill_switch.is_set():
+            print(f"\n🛑 KILL SWITCH ACTIVATED - Stopping scrapers")
+            results.append(f"🛑 Scraper run stopped by kill switch")
+            break
+
         try:
             print(f"\n🏗️  Scraping {city_name}...")
             start_time = time_module.time()
@@ -1250,7 +1273,10 @@ def run_manual_scrapers():
             failed += 1
 
     print("\n" + "=" * 80)
-    print(f"✅ Manual scraper run complete!")
+    if scraper_kill_switch.is_set():
+        print(f"🛑 Scraper run STOPPED by kill switch")
+    else:
+        print(f"✅ Manual scraper run complete!")
     print(f"📊 Results: {successful} successful, {failed} failed")
     for result in results:
         print(f"   {result}")
