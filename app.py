@@ -1282,6 +1282,53 @@ def get_logs():
         print(f"Error in get_logs: {e}")
         return f"Error retrieving logs: {str(e)}", 500
 
+@app.route('/api/get-leads-structure', methods=['GET'])
+def get_leads_structure():
+    """Return the structure of saved leads folders"""
+    try:
+        leads_dir = 'leads'
+        if not os.path.exists(leads_dir):
+            return jsonify({'cities': []}), 200
+        
+        cities = []
+        for city_name in sorted(os.listdir(leads_dir)):
+            city_path = os.path.join(leads_dir, city_name)
+            if os.path.isdir(city_path):
+                dates = []
+                for date_folder in sorted(os.listdir(city_path), reverse=True):
+                    date_path = os.path.join(city_path, date_folder)
+                    if os.path.isdir(date_path):
+                        # Count CSV files and total permits
+                        csv_files = [f for f in os.listdir(date_path) if f.endswith('.csv')]
+                        total_permits = 0
+                        for csv_file in csv_files:
+                            csv_path = os.path.join(date_path, csv_file)
+                            try:
+                                with open(csv_path, 'r', encoding='utf-8') as f:
+                                    # Count lines minus header
+                                    lines = f.readlines()
+                                    if lines:
+                                        total_permits += len(lines) - 1
+                            except Exception as e:
+                                print(f"Error reading {csv_path}: {e}")
+                        
+                        dates.append({
+                            'date': date_folder,
+                            'files': len(csv_files),
+                            'permits': total_permits
+                        })
+                
+                cities.append({
+                    'name': city_name,
+                    'dates': dates
+                })
+        
+        return jsonify({'cities': cities}), 200
+    
+    except Exception as e:
+        print(f"Error in get-leads-structure: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/last-week', methods=['GET'])
 def last_week():
     """Return permits from the last week for specified cities"""
