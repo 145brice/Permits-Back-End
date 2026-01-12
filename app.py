@@ -1018,6 +1018,24 @@ def run_daily_scrapers():
                 elapsed = time_module.time() - start_time
 
                 if permits and len(permits) > 0:
+                    # Save the scraped permits to CSV
+                    today = datetime.now().strftime('%Y-%m-%d')
+                    city_folder = f"leads/{city_name.lower().replace(' ', '')}"
+                    dest_folder = os.path.join(city_folder, today)
+                    os.makedirs(dest_folder, exist_ok=True)
+                    dest_csv = os.path.join(dest_folder, f"{today}_{city_name.lower().replace(' ', '')}.csv")
+                    
+                    # Write permits to CSV
+                    if permits:
+                        import csv
+                        with open(dest_csv, 'w', newline='', encoding='utf-8') as csvfile:
+                            fieldnames = ['permit_number', 'address', 'permit_type', 'permit_value', 'issue_date']
+                            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                            writer.writeheader()
+                            for permit in permits:
+                                writer.writerow(permit)
+                        print(f"💾 Saved {len(permits)} permits to {dest_csv}")
+                    
                     results.append(f"✅ {city_name}: {len(permits)} permits ({elapsed:.1f}s)")
                     print(f"✅ {city_name}: Successfully scraped {len(permits)} permits in {elapsed:.1f}s")
                     successful += 1
