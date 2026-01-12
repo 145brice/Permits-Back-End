@@ -1391,7 +1391,7 @@ def geocode_address(address, city='Austin, TX'):
 
 @app.route('/last-week', methods=['GET'])
 def last_week():
-    """Return permits from the last week for specified cities"""
+    """Return permits from the most recent scraped data for specified cities"""
     try:
         cities_param = request.args.get('cities', 'austin')
         cities = cities_param.split(',') if cities_param else ['austin']
@@ -1407,13 +1407,11 @@ def last_week():
             leads_dir = 'leads'
             city_dir = os.path.join(leads_dir, city)
             if os.path.exists(city_dir):
-                # Get all date folders, sorted by date descending
+                # Get all date folders, sorted by date descending (most recent first)
                 date_folders = sorted([d for d in os.listdir(city_dir) if os.path.isdir(os.path.join(city_dir, d))], reverse=True)
                 
-                # Take the most recent 7 days (or all if less)
-                recent_dates = date_folders[:7]
-                
-                for date_folder in recent_dates:
+                # Look through ALL date folders until we find data (not just last 7)
+                for date_folder in date_folders:
                     date_path = os.path.join(city_dir, date_folder)
                     # Find CSV files in this date folder
                     csv_files = [f for f in os.listdir(date_path) if f.endswith('.csv')]
@@ -1433,20 +1431,21 @@ def last_week():
                                     permit = {
                                         'address': address,
                                         'description': row.get('permit_type', '') + ' - ' + row.get('description', ''),
-                                        'date': row.get('issue_date', date_folder),
+                                        'date': row.get('issue_date', row.get('date', date_folder)),
                                         'type': row.get('permit_type', 'Permit'),
                                         'permit_number': row.get('permit_number', ''),
-                                        'value': row.get('permit_value', ''),
+                                        'value': row.get('permit_value', row.get('estimated_cost', '')),
                                         'lat': lat,
                                         'lng': lng
                                     }
                                     city_permits.append(permit)
                         except Exception as e:
                             print(f"Error reading {csv_path}: {e}")
-            
-            # If no real data, return empty
-            if not city_permits:
-                city_permits = []
+                    
+                    # If we found permits, stop looking in older folders
+                    # (but continue if this folder was empty)
+                    if city_permits:
+                        break
             
             result[city] = {
                 'count': len(city_permits),
