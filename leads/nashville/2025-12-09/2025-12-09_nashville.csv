@@ -1,0 +1,11 @@
+date,city,permit_type,permit_number,address,description
+2025-11-09,Nashville,Residential,SAMPLE25110901,"9299 Sample St, Nashville",Home renovation
+2025-11-09,Nashville,Commercial,SAMPLE25110902,"8886 Sample St, Nashville",Bathroom addition
+2025-11-10,Nashville,Residential,SAMPLE25111001,"8630 Sample St, Nashville",Kitchen remodel
+2025-11-11,Nashville,Residential,SAMPLE25111101,"4608 Sample St, Nashville",Kitchen remodel
+2025-11-11,Nashville,Commercial,SAMPLE25111102,"7096 Sample St, Nashville",Kitchen remodel
+2025-11-13,Nashville,Residential,SAMPLE25111301,"6779 Sample St, Nashville",Home renovation
+2025-11-13,Nashville,Residential,SAMPLE25111302,"6684 Sample St, Nashville",Home renovation
+2025-11-18,Nashville,Commercial,SAMPLE25111801,"2293 Sample St, Nashville",Home renovation
+2025-11-19,Nashville,Residential,SAMPLE25111901,"2438 Sample St, Nashville",Kitchen remodel
+2025-11-19,Nashville,Residential,SAMPLE25111902,"6747 Sample St, Nashville",Bathroom addition

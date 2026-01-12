@@ -1,0 +1,51 @@
+date,city,permit_type,permit_number,address,description
+2025-11-09,Phoenix,Commercial,PHX25110901,"6662 Mill Ave, Phoenix",Retail space
+2025-11-09,Phoenix,Commercial,PHX25110902,"6606 Camelback Rd, Phoenix",Restaurant renovation
+2025-11-10,Phoenix,Residential,PHX25111001,"6700 Camelback Rd, Phoenix",Home renovation
+2025-11-10,Phoenix,Residential,PHX25111002,"351 Camelback Rd, Phoenix",Kitchen remodel
+2025-11-11,Phoenix,Residential,PHX25111101,"6583 Van Buren St, Phoenix",Restaurant renovation
+2025-11-11,Phoenix,Residential,PHX25111102,"8575 Van Buren St, Phoenix",Deck construction
+2025-11-12,Phoenix,Residential,PHX25111201,"6853 Roosevelt St, Phoenix",Retail space
+2025-11-12,Phoenix,Commercial,PHX25111202,"4765 Roosevelt St, Phoenix",Bathroom addition
+2025-11-13,Phoenix,Residential,PHX25111301,"6389 Roosevelt St, Phoenix",Retail space
+2025-11-14,Phoenix,Residential,PHX25111401,"5225 Mill Ave, Phoenix",Deck construction
+2025-11-15,Phoenix,Commercial,PHX25111501,"1586 Central Ave, Phoenix",Deck construction
+2025-11-15,Phoenix,Commercial,PHX25111502,"7573 Mill Ave, Phoenix",Medical office
+2025-11-15,Phoenix,Commercial,PHX25111503,"9601 Central Ave, Phoenix",Home renovation
+2025-11-16,Phoenix,Commercial,PHX25111601,"813 Mill Ave, Phoenix",Deck construction
+2025-11-16,Phoenix,Commercial,PHX25111602,"5229 Roosevelt St, Phoenix",Retail space
+2025-11-17,Phoenix,Commercial,PHX25111701,"8910 Mill Ave, Phoenix",Retail space
+2025-11-17,Phoenix,Commercial,PHX25111702,"5604 Roosevelt St, Phoenix",Kitchen remodel
+2025-11-17,Phoenix,Residential,PHX25111703,"4761 Roosevelt St, Phoenix",Kitchen remodel
+2025-11-18,Phoenix,Commercial,PHX25111801,"5328 Central Ave, Phoenix",Bathroom addition
+2025-11-19,Phoenix,Commercial,PHX25111901,"9408 Van Buren St, Phoenix",Restaurant renovation
+2025-11-19,Phoenix,Commercial,PHX25111902,"6240 Central Ave, Phoenix",Home renovation
+2025-11-20,Phoenix,Residential,PHX25112001,"533 Camelback Rd, Phoenix",Bathroom addition
+2025-11-21,Phoenix,Residential,PHX25112101,"230 Mill Ave, Phoenix",Home renovation
+2025-11-22,Phoenix,Commercial,PHX25112201,"5708 Roosevelt St, Phoenix",Office buildout
+2025-11-22,Phoenix,Residential,PHX25112202,"9375 Roosevelt St, Phoenix",Retail space
+2025-11-23,Phoenix,Commercial,PHX25112301,"2066 Roosevelt St, Phoenix",Restaurant renovation
+2025-11-23,Phoenix,Commercial,PHX25112302,"6094 Roosevelt St, Phoenix",Office buildout
+2025-11-23,Phoenix,Commercial,PHX25112303,"179 Camelback Rd, Phoenix",Home renovation
+2025-11-24,Phoenix,Commercial,PHX25112401,"9770 Roosevelt St, Phoenix",Bathroom addition
+2025-11-24,Phoenix,Residential,PHX25112402,"160 Roosevelt St, Phoenix",Retail space
+2025-11-25,Phoenix,Commercial,PHX25112501,"4575 Mill Ave, Phoenix",Office buildout
+2025-11-25,Phoenix,Commercial,PHX25112502,"4558 Mill Ave, Phoenix",Deck construction
+2025-11-26,Phoenix,Commercial,PHX25112601,"8464 Central Ave, Phoenix",Restaurant renovation
+2025-11-26,Phoenix,Residential,PHX25112602,"1329 Central Ave, Phoenix",Medical office
+2025-11-26,Phoenix,Commercial,PHX25112603,"4070 Roosevelt St, Phoenix",Restaurant renovation
+2025-11-27,Phoenix,Commercial,PHX25112701,"6950 Central Ave, Phoenix",Bathroom addition
+2025-11-27,Phoenix,Residential,PHX25112702,"6339 Roosevelt St, Phoenix",Bathroom addition
+2025-11-27,Phoenix,Commercial,PHX25112703,"8236 Roosevelt St, Phoenix",Office buildout
+2025-11-28,Phoenix,Residential,PHX25112801,"8244 Central Ave, Phoenix",Retail space
+2025-11-29,Phoenix,Residential,PHX25112901,"5140 Van Buren St, Phoenix",Bathroom addition
+2025-11-29,Phoenix,Commercial,PHX25112902,"1488 Camelback Rd, Phoenix",Retail space
+2025-11-29,Phoenix,Residential,PHX25112903,"980 Roosevelt St, Phoenix",Retail space
+2025-11-30,Phoenix,Residential,PHX25113001,"7825 Mill Ave, Phoenix",Home renovation
+2025-12-01,Phoenix,Residential,PHX25120101,"553 Roosevelt St, Phoenix",Kitchen remodel
+2025-12-02,Phoenix,Commercial,PHX25120201,"8728 Central Ave, Phoenix",Restaurant renovation
+2025-12-02,Phoenix,Commercial,PHX25120202,"1470 Central Ave, Phoenix",Medical office
+2025-12-03,Phoenix,Commercial,PHX25120301,"9393 Camelback Rd, Phoenix",Medical office
+2025-12-03,Phoenix,Residential,PHX25120302,"1726 Central Ave, Phoenix",Bathroom addition
+2025-12-04,Phoenix,Commercial,PHX25120401,"4954 Roosevelt St, Phoenix",Retail space
+2025-12-04,Phoenix,Residential,PHX25120402,"3032 Van Buren St, Phoenix",Kitchen remodel

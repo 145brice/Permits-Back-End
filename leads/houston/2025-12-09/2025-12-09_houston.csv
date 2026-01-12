@@ -1,0 +1,51 @@
+date,city,permit_type,permit_number,address,description
+2025-11-09,Houston,Residential,HOU25110901,"3362 Montrose Blvd, Houston",Medical office
+2025-11-09,Houston,Residential,HOU25110902,"6198 Texas Ave, Houston",Kitchen remodel
+2025-11-10,Houston,Commercial,HOU25111001,"6237 Main St, Houston",Bathroom addition
+2025-11-10,Houston,Commercial,HOU25111002,"2423 Texas Ave, Houston",Bathroom addition
+2025-11-11,Houston,Commercial,HOU25111101,"9070 Texas Ave, Houston",Retail space
+2025-11-11,Houston,Residential,HOU25111102,"1331 Westheimer Rd, Houston",Deck construction
+2025-11-12,Houston,Commercial,HOU25111201,"1898 Texas Ave, Houston",Deck construction
+2025-11-12,Houston,Residential,HOU25111202,"3458 Texas Ave, Houston",Retail space
+2025-11-13,Houston,Residential,HOU25111301,"5638 Main St, Houston",Retail space
+2025-11-13,Houston,Commercial,HOU25111302,"9218 Montrose Blvd, Houston",Home renovation
+2025-11-14,Houston,Commercial,HOU25111401,"783 Post Oak Ln, Houston",Retail space
+2025-11-14,Houston,Residential,HOU25111402,"892 Main St, Houston",Kitchen remodel
+2025-11-14,Houston,Residential,HOU25111403,"7996 Main St, Houston",Bathroom addition
+2025-11-15,Houston,Residential,HOU25111501,"8729 Texas Ave, Houston",Retail space
+2025-11-15,Houston,Residential,HOU25111502,"2239 Main St, Houston",Medical office
+2025-11-16,Houston,Residential,HOU25111601,"693 Main St, Houston",Restaurant renovation
+2025-11-16,Houston,Residential,HOU25111602,"5443 Montrose Blvd, Houston",Restaurant renovation
+2025-11-17,Houston,Commercial,HOU25111701,"1741 Westheimer Rd, Houston",Office buildout
+2025-11-18,Houston,Commercial,HOU25111801,"7612 Main St, Houston",Medical office
+2025-11-18,Houston,Residential,HOU25111802,"5970 Texas Ave, Houston",Medical office
+2025-11-18,Houston,Residential,HOU25111803,"8401 Texas Ave, Houston",Home renovation
+2025-11-19,Houston,Residential,HOU25111901,"3428 Main St, Houston",Office buildout
+2025-11-19,Houston,Residential,HOU25111902,"7571 Westheimer Rd, Houston",Medical office
+2025-11-19,Houston,Commercial,HOU25111903,"9973 Montrose Blvd, Houston",Retail space
+2025-11-20,Houston,Commercial,HOU25112001,"8692 Westheimer Rd, Houston",Office buildout
+2025-11-21,Houston,Commercial,HOU25112101,"309 Post Oak Ln, Houston",Kitchen remodel
+2025-11-22,Houston,Residential,HOU25112201,"5314 Post Oak Ln, Houston",Medical office
+2025-11-22,Houston,Residential,HOU25112202,"1756 Main St, Houston",Home renovation
+2025-11-22,Houston,Commercial,HOU25112203,"8608 Montrose Blvd, Houston",Deck construction
+2025-11-23,Houston,Commercial,HOU25112301,"7255 Texas Ave, Houston",Retail space
+2025-11-23,Houston,Commercial,HOU25112302,"4807 Montrose Blvd, Houston",Office buildout
+2025-11-23,Houston,Commercial,HOU25112303,"2171 Post Oak Ln, Houston",Restaurant renovation
+2025-11-24,Houston,Commercial,HOU25112401,"8793 Texas Ave, Houston",Medical office
+2025-11-25,Houston,Residential,HOU25112501,"7841 Montrose Blvd, Houston",Bathroom addition
+2025-11-26,Houston,Commercial,HOU25112601,"6519 Main St, Houston",Bathroom addition
+2025-11-27,Houston,Residential,HOU25112701,"9048 Post Oak Ln, Houston",Office buildout
+2025-11-27,Houston,Commercial,HOU25112702,"6274 Main St, Houston",Medical office
+2025-11-27,Houston,Residential,HOU25112703,"4953 Westheimer Rd, Houston",Kitchen remodel
+2025-11-28,Houston,Commercial,HOU25112801,"612 Texas Ave, Houston",Home renovation
+2025-11-29,Houston,Commercial,HOU25112901,"2097 Montrose Blvd, Houston",Retail space
+2025-11-29,Houston,Commercial,HOU25112902,"9450 Texas Ave, Houston",Bathroom addition
+2025-11-30,Houston,Commercial,HOU25113001,"2676 Westheimer Rd, Houston",Restaurant renovation
+2025-11-30,Houston,Residential,HOU25113002,"224 Post Oak Ln, Houston",Office buildout
+2025-12-01,Houston,Residential,HOU25120101,"5981 Westheimer Rd, Houston",Restaurant renovation
+2025-12-01,Houston,Residential,HOU25120102,"8592 Montrose Blvd, Houston",Retail space
+2025-12-01,Houston,Commercial,HOU25120103,"2433 Westheimer Rd, Houston",Deck construction
+2025-12-02,Houston,Residential,HOU25120201,"4874 Main St, Houston",Office buildout
+2025-12-02,Houston,Commercial,HOU25120202,"1650 Montrose Blvd, Houston",Bathroom addition
+2025-12-03,Houston,Residential,HOU25120301,"9449 Post Oak Ln, Houston",Restaurant renovation
+2025-12-03,Houston,Residential,HOU25120302,"4344 Texas Ave, Houston",Deck construction

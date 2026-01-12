@@ -1,0 +1,11 @@
+date,city,permit_type,permit_number,address,description
+2025-11-09,Charlotte,Commercial,SAMPLE25110901,"7708 Sample St, Charlotte",Kitchen remodel
+2025-11-10,Charlotte,Residential,SAMPLE25111001,"8232 Sample St, Charlotte",Bathroom addition
+2025-11-10,Charlotte,Commercial,SAMPLE25111002,"9027 Sample St, Charlotte",Bathroom addition
+2025-11-11,Charlotte,Commercial,SAMPLE25111101,"8086 Sample St, Charlotte",Kitchen remodel
+2025-11-11,Charlotte,Residential,SAMPLE25111102,"2644 Sample St, Charlotte",Bathroom addition
+2025-11-12,Charlotte,Commercial,SAMPLE25111201,"3906 Sample St, Charlotte",Bathroom addition
+2025-11-12,Charlotte,Residential,SAMPLE25111202,"3360 Sample St, Charlotte",Home renovation
+2025-11-13,Charlotte,Commercial,SAMPLE25111301,"5441 Sample St, Charlotte",Kitchen remodel
+2025-11-14,Charlotte,Residential,SAMPLE25111401,"4337 Sample St, Charlotte",Kitchen remodel
+2025-11-15,Charlotte,Residential,SAMPLE25111501,"2162 Sample St, Charlotte",Home renovation
