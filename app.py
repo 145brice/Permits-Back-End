@@ -1120,7 +1120,7 @@ def run_daily_scrapers():
                     dest_folder = os.path.join(city_folder, today)
                     os.makedirs(dest_folder, exist_ok=True)
                     dest_csv = os.path.join(dest_folder, f"{today}_{city_name.lower().replace(' ', '')}.csv")
-                    
+
                     # Write permits to CSV
                     if permits:
                         import csv
@@ -1131,7 +1131,39 @@ def run_daily_scrapers():
                             for permit in permits:
                                 writer.writerow(permit)
                         print(f"💾 Saved {len(permits)} permits to {dest_csv}")
-                    
+
+                    # Upload to Supabase
+                    if supabase:
+                        try:
+                            supabase_permits = []
+                            for permit in permits:
+                                cost_str = permit.get('permit_value', '')
+                                try:
+                                    cost_val = float(cost_str.replace('$', '').replace(',', '')) if cost_str else None
+                                except:
+                                    cost_val = None
+
+                                supabase_permit = {
+                                    "permit_number": permit.get('permit_number', f"{city_name}_{permit.get('address', 'unknown')[:30]}"),
+                                    "address": permit.get('address', 'Unknown'),
+                                    "city": city_name.lower().replace(' ', ''),
+                                    "permit_type": permit.get('permit_type', 'Permit'),
+                                    "description": permit.get('description', ''),
+                                    "issue_date": permit.get('issue_date', today),
+                                    "estimated_cost": cost_val,
+                                    "lat": permit.get('lat'),
+                                    "lng": permit.get('lng')
+                                }
+                                supabase_permits.append(supabase_permit)
+
+                            # Insert in batches of 100
+                            for i in range(0, len(supabase_permits), 100):
+                                batch = supabase_permits[i:i+100]
+                                supabase.table('permits').upsert(batch).execute()
+                            print(f"☁️  Uploaded {len(supabase_permits)} permits to Supabase")
+                        except Exception as e:
+                            print(f"⚠️  Supabase upload failed: {e}")
+
                     results.append(f"✅ {city_name}: {len(permits)} permits ({elapsed:.1f}s)")
                     print(f"✅ {city_name}: Successfully scraped {len(permits)} permits in {elapsed:.1f}s")
                     successful += 1
