@@ -4,8 +4,9 @@ import requests as http_requests
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 from datetime import datetime, timedelta
-import firebase_admin
-from firebase_admin import credentials, firestore, auth
+# Firebase removed - using Supabase only
+# import firebase_admin
+# from firebase_admin import credentials, firestore, auth
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail, Email, To, Content
 import pytz
@@ -178,15 +179,8 @@ SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')
 OWNER_EMAIL = os.getenv('OWNER_EMAIL')
 FROM_EMAIL = os.getenv('FROM_EMAIL')
 
-# Firebase credentials from service account key file
-if not firebase_admin._apps:
-    try:
-        cred = credentials.Certificate('serviceAccountKey.json')
-        firebase_admin.initialize_app(cred)
-        db = firestore.client()
-    except Exception as e:
-        print(f"Firebase initialization failed: {e}")
-        db = None
+# Firebase removed - using Supabase only
+db = None
 
 stripe.api_key = STRIPE_SECRET_KEY
 
