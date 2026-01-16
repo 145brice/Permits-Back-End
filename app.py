@@ -1527,65 +1527,18 @@ def get_recent_permits():
         print(f"Error in get-recent-permits: {e}")
         return jsonify({'error': str(e)}), 500
 
-# MapTiler API key for geocoding
-MAPTILER_API_KEY = os.getenv('MAPTILER_API_KEY', 'jEn4MW4VhPVe82B3bazQ')
-
-# In-memory cache as fallback
-geocode_cache = {}
-
+# Geocoding disabled to avoid API limits
 def geocode_address(address, city='Austin, TX'):
-    """Convert address to lat/lng using Supabase cache first, then MapTiler API"""
-    if not address or address == 'Unknown Address':
-        return None, None
-    
-    # Check Supabase cache first
-    cache_key = f"{address}_{city}"
-    
-    if supabase:
+    """Geocoding disabled - returns None to avoid hitting API limits"""
+    # Check Supabase cache only (no new API calls)
+    if supabase and address and address != 'Unknown Address':
         try:
             result = supabase.table('geocode_cache').select('lat, lng').eq('address', address).eq('city', city).execute()
             if result.data and len(result.data) > 0:
                 return result.data[0]['lat'], result.data[0]['lng']
         except Exception as e:
             print(f"Supabase cache read error: {e}")
-    
-    # Check in-memory cache
-    if cache_key in geocode_cache:
-        return geocode_cache[cache_key]
-    
-    try:
-        # Build full address query
-        full_address = f"{address}, {city}"
-        encoded_address = full_address.replace(' ', '%20').replace(',', '%2C')
-        
-        url = f"https://api.maptiler.com/geocoding/{encoded_address}.json?key={MAPTILER_API_KEY}"
-        
-        response = http_requests.get(url, timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            if data.get('features') and len(data['features']) > 0:
-                coords = data['features'][0]['geometry']['coordinates']
-                lng, lat = coords[0], coords[1]
-                
-                # Save to Supabase cache
-                if supabase:
-                    try:
-                        supabase.table('geocode_cache').upsert({
-                            'address': address,
-                            'city': city,
-                            'lat': lat,
-                            'lng': lng
-                        }, on_conflict='address,city').execute()
-                    except Exception as e:
-                        print(f"Supabase cache write error: {e}")
-                
-                # Also save to in-memory cache
-                geocode_cache[cache_key] = (lat, lng)
-                return lat, lng
-    except Exception as e:
-        print(f"Geocoding error for {address}: {e}")
-    
-    geocode_cache[cache_key] = (None, None)
+
     return None, None
 
 @app.route('/last-week', methods=['GET'])
