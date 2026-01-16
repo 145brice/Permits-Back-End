@@ -1488,6 +1488,45 @@ def get_leads_structure():
         print(f"Error in get-leads-structure: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/get-recent-permits', methods=['GET'])
+def get_recent_permits():
+    """Get recent permits from Supabase with details"""
+    try:
+        city = request.args.get('city', 'austin').lower()
+        limit = int(request.args.get('limit', 50))
+
+        if not supabase:
+            return jsonify({'error': 'Supabase not connected'}), 500
+
+        # Get recent permits from Supabase, ordered by issue_date
+        result = supabase.table('permits').select('*').eq('city', city).order('issue_date', desc=True).limit(limit).execute()
+
+        permits = []
+        if result.data:
+            for row in result.data:
+                permit = {
+                    'permit_number': row.get('permit_number', 'N/A'),
+                    'address': row.get('address', 'Unknown'),
+                    'city': row.get('city', city),
+                    'permit_type': row.get('permit_type', 'Permit'),
+                    'description': row.get('description', ''),
+                    'issue_date': row.get('issue_date', ''),
+                    'estimated_cost': row.get('estimated_cost'),
+                    'lat': row.get('lat'),
+                    'lng': row.get('lng')
+                }
+                permits.append(permit)
+
+        return jsonify({
+            'city': city,
+            'total': len(permits),
+            'permits': permits
+        }), 200
+
+    except Exception as e:
+        print(f"Error in get-recent-permits: {e}")
+        return jsonify({'error': str(e)}), 500
+
 # MapTiler API key for geocoding
 MAPTILER_API_KEY = os.getenv('MAPTILER_API_KEY', 'jEn4MW4VhPVe82B3bazQ')
 
